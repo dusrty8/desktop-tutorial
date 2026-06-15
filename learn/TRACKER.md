@@ -1,63 +1,59 @@
-# 🗺️ My Data Science Learning Map
+# 🗺️ My Data Science Learning Map — Scaler DSML (Aug24)
 
-> **Goal:** Pass the vivas, code it myself, get the *intuition*, direct AI well — and manage it as a manager.
-> **Pace:** ~1 month, flexible. Some topics fast, some slow. That's fine.
-> **Rule:** 25-min focus blocks. One concept at a time. Code in the first 5 minutes. Break when restless.
-
-Mark each box `[x]` when you can **explain it out loud** (viva test), not just run it.
+> **Goal:** Pass the 4 pending vivas, *actually understand* it, code it myself, and direct AI well — as a manager who gets it.
+> **Pace:** ~1 month, flexible. Some topics fast, some slow.
+> **ADHD rules:** 25-min blocks · one concept at a time · code in the first 5 min · break when restless · quick win every block.
 
 ---
 
-## Phase 0 — Python Refresh  ⏱️ ~3–4 blocks
-- [ ] 0.1 Variables, types, f-strings, printing
-- [ ] 0.2 Lists, dicts, loops, comprehensions
-- [ ] 0.3 Functions & writing clean reusable code
-- [ ] 0.4 NumPy arrays (the engine under all ML)
-- [ ] 0.5 Pandas DataFrames (loading & exploring data)
+## 🎯 The 4 targets (pending "AI Companion Interview" vivas)
+- [ ] **Module 17** — ML: Adv Supervised → PCA, t-SNE, clustering, anomaly detection
+- [ ] **Module 18** — ML: Unsupervised & RecSys → time series, recommender systems
+- [ ] **Module 22** — Computer Vision → CNNs, transfer learning, detection, GANs
+- [ ] **Module 23** — NLP → embeddings, RNN/LSTM, attention, transformers, BERT
 
-## Phase 1 — Math & Stats (the part that tripped me up)  ⏱️ ~6–8 blocks
-- [ ] 1.1 Descriptive stats: mean, median, variance, std
-- [ ] 1.2 Probability basics + distributions
-- [ ] 1.3 The Normal distribution & Central Limit Theorem
-- [ ] 1.4 Hypothesis testing & p-values
-- [ ] 1.5 Linear algebra for ML (vectors, matrices, dot product)
-- [ ] 1.6 Calculus intuition (derivatives = how models learn)
+## ✅ Already certified (don't re-learn, just keep sharp)
+SQL · NumPy/Pandas · Stats Fundamentals
 
-## Phase 2 — Classical Machine Learning (heaviest viva area)  ⏱️ ~10+ blocks
-- [ ] 2.1 What is ML? Train/test, features/labels
-- [ ] 2.2 Linear Regression + Gradient Descent (from scratch)
-- [ ] 2.3 Logistic Regression (classification)
-- [ ] 2.4 Model evaluation: accuracy, precision/recall, ROC
-- [ ] 2.5 Bias–Variance, overfitting, regularization
-- [ ] 2.6 Decision Trees & Random Forests
-- [ ] 2.7 Boosting (XGBoost intuition)
-- [ ] 2.8 KNN & SVM
-- [ ] 2.9 Clustering (K-Means) + PCA
-
-## Phase 3 — Advanced ML
-- [ ] 3.1 Feature engineering
-- [ ] 3.2 Hyperparameter tuning & cross-validation
-- [ ] 3.3 Recommender systems
-- [ ] 3.4 Time series basics
-
-## Phase 4 — Deep Learning & Neural Nets
-- [ ] 4.1 The perceptron & how a neuron computes
-- [ ] 4.2 Backpropagation intuition
-- [ ] 4.3 Building an ANN (PyTorch/TensorFlow)
-- [ ] 4.4 CNNs (images)
-- [ ] 4.5 RNN/LSTM (sequences)
-
-## Phase 5 — NLP & Modern AI
-- [ ] 5.1 Text preprocessing & embeddings
-- [ ] 5.2 Transformers intuition
-- [ ] 5.3 LLMs & how to direct them well
-- [ ] 5.4 (Optional) Computer Vision, MLOps/deployment, Agentic AI
+## 🧱 The dependency spine (why we build bottom-up)
+```
+Maths for ML (gradient descent)   ← where I got tripped
+   └─ Linear / Logistic Regression
+        └─ Supervised algos (KNN, trees, RF, boosting, SVM)
+             └─ Unsupervised (PCA, clustering)      → VIVA 17
+             └─ Time series + RecSys                → VIVA 18
+        └─ Neural Networks (perceptron, backprop)
+             └─ CNNs                                → VIVA 22
+             └─ RNN/LSTM/Transformers               → VIVA 23
+```
 
 ---
 
-### How we work each block
-1. I drop a tiny runnable file in the lesson folder.
-2. You run it, then change one thing and re-run.
-3. You do 1–2 TODO exercises.
-4. I ask you **2 viva-style questions** — you explain it back in plain words.
+## Week 1 — The ML Spine  (the maths that tripped me)
+- [ ] 1.1 What is ML? + **how a model learns (gradient descent)**  ← START HERE
+- [ ] 1.2 Linear Regression from scratch
+- [ ] 1.3 Logistic Regression (classification)
+- [ ] 1.4 Overfitting, bias–variance, regularization, cross-validation
+- [ ] 1.5 Classification metrics (precision/recall/ROC) + imbalanced data
+
+## Week 2 — Supervised → Unsupervised  → 🎯 VIVA 17
+- [ ] 2.1 KNN · 2.2 Decision Trees · 2.3 Random Forest & Bagging
+- [ ] 2.4 Boosting (XGBoost intuition) · 2.5 Naive Bayes · 2.6 SVM
+- [ ] 2.7 PCA · 2.8 t-SNE/UMAP · 2.9 KMeans/GMM/Hierarchical/DBSCAN · 2.10 Anomaly detection
+
+## Week 3 — RecSys + NN foundations  → 🎯 VIVA 18
+- [ ] 3.1 Time series & forecasting · 3.2 Recommender systems
+- [ ] 3.3 The perceptron & a neuron · 3.4 Forward + backpropagation
+
+## Week 4 — Deep Learning  → 🎯 VIVAS 22 & 23
+- [ ] 4.1 CNNs & transfer learning · 4.2 Object detection / GANs intuition
+- [ ] 4.3 Word embeddings (Word2Vec) · 4.4 RNN/LSTM · 4.5 Attention → Transformers → BERT
+
+---
+
+### How each block runs
+1. I drop a tiny runnable file in `learn/`.
+2. You run it → change one thing → re-run.
+3. Do 1–2 TODO exercises.
+4. I ask **2 viva-style questions** → you explain it back in plain words.
 5. Tick the box. Quick win. Break if needed.
