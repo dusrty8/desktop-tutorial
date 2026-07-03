@@ -8,6 +8,9 @@ actually eat.
 No accounts, no backend, no build step. Everything runs in your browser and
 your data stays on your device (localStorage).
 
+**📱 Live app:** https://dusrty8.github.io/desktop-tutorial/ — open it on
+your phone and add it to your home screen (see below).
+
 ## Run it
 
 Open `index.html` in any modern browser — that's it.
