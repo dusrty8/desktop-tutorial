@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>Annapurna — Indian Calorie Tracker & Fitness Planner</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌿</text></svg>">
+</head>
+<body>
+  <header class="app-header">
+    <h1><span class="leaf">🌿</span> Annapurna</h1>
+    <span class="tagline">Indian-first calorie tracking — IFCT 2017 / INDB grounded, with oil &amp; cooking-style accuracy</span>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="log">Log Food</button>
+    <button data-view="dietplan">Diet Plan</button>
+    <button data-view="workout">Workout</button>
+    <button data-view="weight">Weight</button>
+    <button data-view="database">Food Database</button>
+    <button data-view="profile">Profile</button>
+  </nav>
+
+  <main>
+    <!-- ================= Dashboard ================= -->
+    <section class="view active" id="view-dashboard">
+      <div class="date-nav">
+        <button class="btn secondary small" id="dash-prev" aria-label="Previous day">←</button>
+        <input type="date" id="dash-date">
+        <button class="btn secondary small" id="dash-next" aria-label="Next day">→</button>
+        <button class="btn small" id="dash-today">Today</button>
+      </div>
+
+      <div class="stat-row" id="dash-stats"></div>
+
+      <div class="grid-2" style="margin-top:16px">
+        <div class="card">
+          <h2>Macros</h2>
+          <div style="display:flex; gap:18px; align-items:center; flex-wrap:wrap">
+            <div id="dash-donut"></div>
+            <div style="flex:1; min-width:200px" id="dash-macro-bars"></div>
+          </div>
+          <div class="legend" id="dash-legend"></div>
+        </div>
+        <div class="card">
+          <h2>Water</h2>
+          <div class="water-row">
+            <button class="btn secondary small" id="water-minus">−</button>
+            <div class="water-glasses" id="water-glasses"></div>
+            <button class="btn small" id="water-plus">+</button>
+          </div>
+          <p class="hint" id="water-hint" style="margin-top:8px"></p>
+          <h2 style="margin-top:18px">Exercise today</h2>
+          <div id="dash-exercises"></div>
+          <div class="form-grid" style="margin-top:8px">
+            <label class="field"><span>Activity</span>
+              <select id="ex-select"></select>
+            </label>
+            <label class="field"><span>Minutes</span>
+              <input type="number" id="ex-minutes" min="5" max="300" step="5" value="30">
+            </label>
+          </div>
+          <button class="btn small" id="ex-add">Log exercise</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Today's meals</h2>
+        <div id="dash-meals"></div>
+      </div>
+    </section>
+
+    <!-- ================= Log Food ================= -->
+    <section class="view" id="view-log">
+      <div class="card">
+        <h2>Search the Indian food database</h2>
+        <div class="search-row">
+          <input type="text" id="log-search" placeholder="Search: roti, dal, dosa, biryani, chaat, badam…">
+          <select id="log-cat"></select>
+          <select id="log-diet-filter">
+            <option value="all">All diets</option>
+            <option value="veg">Vegetarian</option>
+            <option value="vegan">Vegan</option>
+            <option value="egg">Eggetarian</option>
+            <option value="jain">Jain-friendly</option>
+          </select>
+        </div>
+        <p class="hint" id="log-count"></p>
+        <div class="food-list" id="log-results"></div>
+      </div>
+    </section>
+
+    <!-- ================= Diet Plan ================= -->
+    <section class="view" id="view-dietplan">
+      <div class="notice">
+        Plans are generated from your profile — goal, pace, activity and diet
+        preference — the way HealthifyMe's coach plans are structured:
+        4 meals, Indian staples scaled to your calorie budget, protein
+        topped up when short.
+      </div>
+      <div class="card">
+        <h2>Your 7-day Indian diet plan</h2>
+        <div id="diet-targets" class="hint" style="margin-bottom:10px"></div>
+        <div class="form-actions">
+          <button class="btn" id="diet-generate">Generate plan</button>
+          <button class="btn secondary" id="diet-regenerate">Regenerate (new variety)</button>
+        </div>
+        <div id="diet-plan-days" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <!-- ================= Workout ================= -->
+    <section class="view" id="view-workout">
+      <div class="card">
+        <h2>Weekly workout plan</h2>
+        <div class="form-grid">
+          <label class="field"><span>Level</span>
+            <select id="wo-level">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </label>
+          <label class="field"><span>Days per week</span>
+            <select id="wo-days">
+              <option value="3">3</option>
+              <option value="4" selected>4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </label>
+          <label class="field"><span>Where</span>
+            <select id="wo-place">
+              <option value="home">Home (no equipment)</option>
+              <option value="gym">Gym</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn" id="wo-generate">Generate workout plan</button>
+        <div id="wo-plan" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <!-- ================= Weight ================= -->
+    <section class="view" id="view-weight">
+      <div class="card">
+        <h2>Weight trend</h2>
+        <div id="weight-chart"></div>
+        <div class="stat-row" id="weight-stats" style="margin-top:12px"></div>
+      </div>
+      <div class="card">
+        <h2>Log weight</h2>
+        <div class="form-grid">
+          <label class="field"><span>Date</span><input type="date" id="wt-date"></label>
+          <label class="field"><span>Weight (kg)</span><input type="number" id="wt-kg" min="20" max="300" step="0.1"></label>
+        </div>
+        <button class="btn" id="wt-add">Save weight</button>
+        <div class="table-wrap" style="margin-top:14px">
+          <table class="data" id="wt-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Food Database ================= -->
+    <section class="view" id="view-database">
+      <div class="notice">
+        Nutrient values compiled per-serving from the ICMR-NIN
+        <strong>Indian Food Composition Tables (IFCT 2017)</strong> for raw
+        foods and the <strong>Indian Nutrient Databank (INDB)</strong> recipe
+        methodology for cooked dishes. Oil-sensitive dishes support
+        cooking-style and added-oil adjustments when you log them.
+      </div>
+      <div class="card">
+        <div class="search-row">
+          <input type="text" id="db-search" placeholder="Search all foods…">
+          <select id="db-cat"></select>
+        </div>
+        <p class="hint" id="db-count"></p>
+        <div class="table-wrap">
+          <table class="data" id="db-table"></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Profile ================= -->
+    <section class="view" id="view-profile">
+      <div class="card">
+        <h2>Your profile &amp; goal</h2>
+        <div class="form-grid" id="profile-form">
+          <label class="field"><span>Name</span><input type="text" id="pf-name" placeholder="Your name"></label>
+          <label class="field"><span>Sex</span>
+            <select id="pf-sex"><option value="female">Female</option><option value="male">Male</option></select>
+          </label>
+          <label class="field"><span>Age (years)</span><input type="number" id="pf-age" min="13" max="100" value="30"></label>
+          <label class="field"><span>Height (cm)</span><input type="number" id="pf-height" min="120" max="230" value="165"></label>
+          <label class="field"><span>Current weight (kg)</span><input type="number" id="pf-weight" min="30" max="250" step="0.1" value="70"></label>
+          <label class="field"><span>Goal weight (kg)</span><input type="number" id="pf-goal" min="30" max="250" step="0.1" value="65"></label>
+          <label class="field"><span>Activity level</span><select id="pf-activity"></select></label>
+          <label class="field"><span>Pace</span><select id="pf-pace"></select></label>
+          <label class="field"><span>Diet preference</span><select id="pf-diet"></select></label>
+        </div>
+        <div class="form-actions">
+          <button class="btn" id="pf-save">Save profile</button>
+        </div>
+        <div id="pf-summary" style="margin-top:14px"></div>
+      </div>
+      <div class="card">
+        <h2>Data</h2>
+        <div class="form-actions">
+          <button class="btn secondary" id="data-export">Export backup (JSON)</button>
+          <button class="btn secondary" id="data-import">Import backup</button>
+          <button class="btn danger-ghost" id="data-reset">Reset all data</button>
+        </div>
+        <input type="file" id="data-import-file" accept="application/json" class="hidden">
+        <p class="hint" style="margin-top:8px">Everything is stored locally in your browser — nothing leaves your device.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Log-food modal -->
+  <div class="modal-backdrop hidden" id="food-modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2 id="fm-name"></h2>
+      <p class="food-serving" id="fm-serving"></p>
+      <div class="form-grid">
+        <label class="field"><span>Servings</span>
+          <input type="number" id="fm-qty" min="0.5" max="10" step="0.5" value="1">
+        </label>
+        <label class="field"><span>Meal</span>
+          <select id="fm-meal">
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="snacks">Snacks</option>
+            <option value="dinner">Dinner</option>
+          </select>
+        </label>
+      </div>
+      <div id="fm-oil-section">
+        <label class="field"><span>Cooking style</span>
+          <select id="fm-style"></select>
+        </label>
+        <div class="form-grid">
+          <label class="field"><span>Extra oil/ghee (tsp)</span>
+            <input type="number" id="fm-oil-tsp" min="0" max="6" step="0.5" value="0">
+          </label>
+          <label class="field"><span>Which fat?</span>
+            <select id="fm-oil-type"></select>
+          </label>
+        </div>
+      </div>
+      <div class="live-kcal" id="fm-kcal"></div>
+      <div class="live-macros" id="fm-macros"></div>
+      <div class="form-actions">
+        <button class="btn" id="fm-add">Add to log</button>
+        <button class="btn secondary" id="fm-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding modal -->
+  <div class="modal-backdrop hidden" id="onboard-backdrop">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h2>Welcome to Annapurna 🌿</h2>
+      <p class="hint" style="margin-bottom:12px">
+        Tell us about yourself and your goal — we'll compute your daily
+        calorie budget, macros and water target, and generate Indian diet
+        &amp; workout plans for you. You can change all of this later in
+        Profile.
+      </p>
+      <button class="btn" id="onboard-go">Set up my profile →</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="js/data/foods.js"></script>
+  <script src="js/data/exercises.js"></script>
+  <script src="js/nutrition.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/planner.js"></script>
+  <script src="js/charts.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
