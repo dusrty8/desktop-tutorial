@@ -94,7 +94,7 @@
       cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best));
       cross.setAttribute('visibility', 'visible');
       tip.style.display = 'block';
-      tip.innerHTML = '<strong>' + points[best].kg + ' kg</strong><br>' + points[best].date;
+      tip.innerHTML = '<strong>' + esc(points[best].kg) + ' kg</strong><br>' + esc(points[best].date);
       var px = x(best) * rect.width / W;
       tip.style.left = Math.min(Math.max(px - 40, 0), rect.width - 96) + 'px';
       tip.style.top = (y(points[best].kg) * rect.height / H - 52) + 'px';

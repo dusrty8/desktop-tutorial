@@ -126,9 +126,11 @@
     return items;
   }
 
-  function buildBreakfast(P, rnd, budget, avoid) {
+  function buildBreakfast(P, rnd, budget, avoid, proteinFirst) {
     var items = [];
-    var main = pick(P.breakfast, rnd, avoid);
+    // muscle goals bias breakfast toward protein (moong/besan chilla,
+    // paneer bhurji, eggs) instead of a random poha/upma
+    var main = (proteinFirst ? pickProtein : pick)(P.breakfast, rnd, avoid);
     var used = 0;
     if (main) {
       var q = Math.min(Math.max(Math.round(budget * 0.7 / main.kcal), 1), main.kcal < 120 ? 4 : 2);
@@ -167,10 +169,11 @@
     P.pref = profile.dietPref;
     var avoid = {};
     var budget = targets.kcal;
+    var proteinFirst = N.goalOf(profile) === 'recomp' || N.goalOf(profile) === 'gain';
     // meal split sums to ~92% — the rest is headroom for the protein
     // booster, so protein-rescued days still land on budget
     var meals = {
-      breakfast: buildBreakfast(P, rnd, budget * 0.23, avoid),
+      breakfast: buildBreakfast(P, rnd, budget * 0.23, avoid, proteinFirst),
       lunch: buildMainMeal(P, rnd, budget * 0.32, avoid),
       snacks: buildSnack(P, rnd, budget * 0.09, avoid),
       dinner: buildMainMeal(P, rnd, budget * 0.28, avoid)
@@ -193,14 +196,18 @@
     }
 
     // protein rescue: top up with substantial boosters (by absolute protein,
-    // not density — one egg white never rescued anyone's macros)
+    // not density — one egg white never rescued anyone's macros). Two passes
+    // so a dense booster (paneer, soya, tofu) can be added more than once,
+    // aiming for 92% of target within a 10% calorie allowance.
     var totals = dayTotals(meals);
     var ranked = P.boosters.slice().sort(function (a, b) { return b.protein - a.protein; });
-    for (var bi = 0; bi < ranked.length && bi < 3; bi++) {
-      if (totals.protein >= targets.protein * 0.85) break;
-      if (totals.kcal + ranked[bi].kcal > targets.kcal * 1.05) continue;
-      meals.snacks.push({ foodId: ranked[bi].id, qty: 1 });
-      totals = dayTotals(meals);
+    for (var pass = 0; pass < 2 && totals.protein < targets.protein * 0.92; pass++) {
+      for (var bi = 0; bi < ranked.length; bi++) {
+        if (totals.protein >= targets.protein * 0.92) break;
+        if (totals.kcal + ranked[bi].kcal > targets.kcal * 1.10) continue;
+        meals.snacks.push({ foodId: ranked[bi].id, qty: 1 });
+        totals = dayTotals(meals);
+      }
     }
     // calorie top-up for surplus (gain) targets: energy-dense extras — nuts,
     // peanut butter, fruit — until the day reaches ~92% of budget

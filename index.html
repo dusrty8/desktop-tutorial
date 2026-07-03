@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Content-Security-Policy: all scripts are local files (no inline JS), so
+       script-src 'self' blocks any injected inline/on* handler; connect-src
+       allows only the optional AI-dietician call to Anthropic. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.anthropic.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#1e5f40" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17402a" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Indian-first calorie tracking, diet plans and workout plans — IFCT 2017 / INDB grounded, with oil & cooking-style accuracy.">
   <title>Annapurna — Indian Calorie Tracker & Fitness Planner</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -37,6 +41,7 @@
   <main>
     <!-- ================= Dashboard ================= -->
     <section class="view active" id="view-dashboard">
+      <p class="view-kicker" aria-hidden="true">Aaj ka hisaab — today at a glance</p>
       <div class="date-nav">
         <button class="btn secondary small" id="dash-prev" aria-label="Previous day">←</button>
         <input type="date" id="dash-date">
@@ -130,6 +135,13 @@
             (fractions of a paisa each) and weekly reviews on
             <strong>Claude Sonnet</strong>. The key is stored only in this
             browser and sent only to api.anthropic.com — never to us.
+          </p>
+          <p class="hint" style="margin-bottom:10px">
+            ⚠️ Note: on a shared hosting origin (e.g. a personal
+            <code>github.io</code> account), other pages you host under the
+            same account could read this browser's stored key. Prefer a
+            dedicated key with a low spend limit, and disconnect it below when
+            you're done.
           </p>
           <div class="form-grid">
             <label class="field" style="grid-column:1/-1"><span>Anthropic API key</span>

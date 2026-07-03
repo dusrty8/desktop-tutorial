@@ -32,7 +32,7 @@
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
   }
   function dietChip(diet) {
-    var label = { vegan: 'VEGAN', veg: 'VEG', egg: 'EGG', nonveg: 'NON-VEG' }[diet] || diet;
+    var label = { vegan: 'VEGAN', veg: 'VEG', egg: 'EGG', nonveg: 'NON-VEG' }[diet] || esc(diet);
     return '<span class="chip ' + esc(diet) + '">' + label + '</span>';
   }
 
@@ -186,7 +186,7 @@
     [['Protein', 'protein', dn.totals.protein, t ? t.protein : 0],
      ['Carbs', 'carbs', dn.totals.carbs, t ? t.carbs : 0],
      ['Fat', 'fat', dn.totals.fat, t ? t.fat : 0],
-     ['Fibre', 'protein', dn.totals.fiber, t ? t.fiber : 0]].forEach(function (row) {
+     ['Fibre', 'fiber', dn.totals.fiber, t ? t.fiber : 0]].forEach(function (row) {
       var pct = row[3] ? Math.min(row[2] / row[3] * 100, 100) : 0;
       var over = row[3] && row[2] > row[3] * 1.15;
       bars += '<div class="bar-row">' + row[0] +
@@ -209,8 +209,8 @@
       ? dn.exercises.map(function (x, i) {
         var ex = P.exById(x.exId);
         return '<div class="entry-row"><span class="entry-name">' + esc(ex ? ex.name : x.exId) +
-          ' <span class="entry-detail">' + x.minutes + ' min</span></span>' +
-          '<span class="entry-kcal">−' + x.kcal + ' kcal</span>' +
+          ' <span class="entry-detail">' + esc(x.minutes) + ' min</span></span>' +
+          '<span class="entry-kcal">−' + esc(x.kcal) + ' kcal</span>' +
           '<button class="icon-btn" data-ex-del="' + i + '" aria-label="Delete exercise">✕</button></div>';
       }).join('')
       : '<p class="hint">Nothing logged yet.</p>';
@@ -230,7 +230,7 @@
             extra.push(it.entry.style === 'light' ? 'light oil' : 'restaurant-style');
           }
           if (it.entry.extraOilTsp) extra.push('+' + it.entry.extraOilTsp + ' tsp oil');
-          var qtyText = it.entry.inputGrams ? it.entry.inputGrams + ' g' : '× ' + it.entry.qty;
+          var qtyText = it.entry.inputGrams ? esc(it.entry.inputGrams) + ' g' : '× ' + esc(it.entry.qty);
           mealsHtml += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name) +
             ' <span class="entry-detail">' + qtyText + (extra.length ? ' · ' + esc(extra.join(', ')) : '') + '</span></span>' +
             '<span class="entry-kcal">' + it.computed.kcal + ' kcal</span>' +
@@ -351,12 +351,21 @@
     $('fm-oil-type').value = 'sunflower';
   }
 
+  // Clamp helpers — the modal inputs declare min/max in HTML but the browser
+  // doesn't enforce them on typed values, so a user can type -5 or 99999.
+  // A negative servings/oil value would log negative calories and corrupt
+  // every downstream total, so clamp to sane positive ranges here.
+  function clampGrams(g) { return Math.min(Math.max(g, 1), 5000); }
+  function clampServings(q) {
+    if (!isFinite(q) || q <= 0) return 1;
+    return Math.min(q, 50);
+  }
   function currentModalQty() {
     if ($('fm-mode').value === 'grams') {
-      var g = parseFloat($('fm-grams').value) || modalFood.grams;
+      var g = clampGrams(parseFloat($('fm-grams').value) || modalFood.grams);
       return Math.max(Math.round(g / modalFood.grams * 100) / 100, 0.01);
     }
-    return parseFloat($('fm-qty').value) || 1;
+    return clampServings(parseFloat($('fm-qty').value));
   }
 
   function syncModalMode() {
@@ -378,6 +387,11 @@
     $('fm-style').value = 'standard';
     $('fm-oil-tsp').value = 0;
     $('fm-oil-section').classList.toggle('hidden', !modalFood.oil && modalFood.role !== 'ingredient');
+    // Cooking-style multiplier only affects oil-sensitive cooked dishes; hide
+    // it for raw ingredients (where it's a dead control) but keep the
+    // extra-oil field, which does apply.
+    var styleField = $('fm-style').closest('.field');
+    if (styleField) styleField.classList.toggle('hidden', !modalFood.oil);
     // suggest the meal by time of day
     var h = new Date().getHours();
     $('fm-meal').value = h < 11 ? 'breakfast' : h < 15 ? 'lunch' : h < 19 ? 'snacks' : 'dinner';
@@ -404,12 +418,13 @@
   $('fm-add').addEventListener('click', function () {
     if (!modalFood) return;
     var gramsMode = $('fm-mode').value === 'grams';
+    var oilTsp = parseFloat($('fm-oil-tsp').value);
     var entry = {
       foodId: modalFood.id,
       qty: currentModalQty(),
-      inputGrams: gramsMode ? (parseFloat($('fm-grams').value) || modalFood.grams) : null,
+      inputGrams: gramsMode ? clampGrams(parseFloat($('fm-grams').value) || modalFood.grams) : null,
       style: $('fm-style').value,
-      extraOilTsp: parseFloat($('fm-oil-tsp').value) || 0,
+      extraOilTsp: Math.min(Math.max(isFinite(oilTsp) ? oilTsp : 0, 0), 6),
       oilId: $('fm-oil-type').value
     };
     S.addFood(currentDate, $('fm-meal').value, entry);
@@ -453,7 +468,7 @@
       html += '<div class="lp-meal"><div class="pm-title">' + MEAL_NAMES[m] +
         ' <span class="bar-nums">' + Math.round(pm.kcal) + ' kcal</span></div>';
       pm.items.forEach(function (it) {
-        var qtyText = it.entry.inputGrams ? it.entry.inputGrams + ' g' : '× ' + it.entry.qty;
+        var qtyText = it.entry.inputGrams ? esc(it.entry.inputGrams) + ' g' : '× ' + esc(it.entry.qty);
         html += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name.split(' (')[0]) +
           ' <span class="entry-detail">' + qtyText + '</span></span>' +
           '<span class="entry-kcal">' + it.computed.kcal + '</span>' +
@@ -531,6 +546,7 @@
   /* ---------------- diet plan ---------------- */
   var dietSeed = 1;
   var lastPlan = null;
+  var loggedDays = {}; // guards against double-logging a plan day to the diary
 
   function renderDietTargets() {
     var p = S.profile();
@@ -550,6 +566,7 @@
     var p = S.profile();
     if (!p) { toast('Set up your profile first'); switchView('profile'); return; }
     lastPlan = P.generateDietPlan(p, dietSeed);
+    loggedDays = {};
     var html = '';
     var DAY_LABEL = ['Day 1 — Monday', 'Day 2 — Tuesday', 'Day 3 — Wednesday', 'Day 4 — Thursday', 'Day 5 — Friday', 'Day 6 — Saturday', 'Day 7 — Sunday'];
     lastPlan.days.forEach(function (day, di) {
@@ -578,12 +595,17 @@
   $('diet-plan-days').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-log-day]');
     if (!b || !lastPlan) return;
-    var day = lastPlan.days[parseInt(b.dataset.logDay, 10)];
+    var di = parseInt(b.dataset.logDay, 10);
+    if (loggedDays[di] && !confirm('You already added this day to today’s diary. Add it again?')) return;
+    var day = lastPlan.days[di];
     Object.keys(day.meals).forEach(function (m) {
       day.meals[m].forEach(function (it) {
         S.addFood(todayStr(), m, { foodId: it.foodId, qty: it.qty, style: 'standard', extraOilTsp: 0, oilId: null });
       });
     });
+    loggedDays[di] = true;
+    b.textContent = 'Added ✓ — tap to add again';
+    if (currentDate === todayStr()) { renderDashboard(); renderLogPanel(); }
     toast('Plan logged to today’s diary');
   });
 
@@ -637,7 +659,7 @@
     }
     var rows = '<tr><th>Date</th><th class="num">Weight (kg)</th><th></th></tr>';
     for (var i = w.length - 1; i >= 0; i--) {
-      rows += '<tr><td>' + esc(w[i].date) + '</td><td class="num">' + w[i].kg + '</td>' +
+      rows += '<tr><td>' + esc(w[i].date) + '</td><td class="num">' + esc(w[i].kg) + '</td>' +
         '<td><button class="icon-btn" data-wt-del="' + esc(w[i].date) + '" aria-label="Delete">✕</button></td></tr>';
     }
     $('wt-table').innerHTML = rows;
@@ -646,6 +668,9 @@
     var date = $('wt-date').value || todayStr();
     var kg = parseFloat($('wt-kg').value);
     if (isNaN(kg) || kg < 20 || kg > 300) { toast('Enter a valid weight'); return; }
+    // A future-dated entry would sort as the newest weight and silently
+    // overwrite the profile's current weight (and every calorie calc).
+    if (date > todayStr()) { toast('Can’t log a weight for a future date'); return; }
     S.addWeight(date, Math.round(kg * 10) / 10);
     toast('Weight saved');
     renderWeight();

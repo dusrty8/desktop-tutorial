@@ -123,9 +123,12 @@
         ' kcal). Under-eating slows progress too — make dinner a proper plate with a protein main.'));
     }
 
-    /* 3 — protein gap, scaled to the time of day */
+    /* 3 — protein gap, scaled to the time of day. The end-of-day trigger
+       (0.6 of target) sits just below what a well-composed plant-based day
+       realistically delivers, so the coach nudges a genuinely low day
+       without flagging an already-good one. */
     var expectedProtein = t.protein * Math.max(frac, 0.3);
-    if (dc.totals.protein < expectedProtein * 0.7) {
+    if (dc.totals.protein < expectedProtein * 0.6) {
       var gap = Math.round(t.protein - dc.totals.protein);
       var boosters = suggestFoods(profile.dietPref, function (f) {
         return f.tags.indexOf('boost') >= 0;

@@ -76,15 +76,19 @@
     var goal = goalOf(profile);
     var delta = paceKg(profile) * 7700 / 7;
     var floor = profile.sex === 'male' ? 1500 : 1200;
+    // For a deficit goal, never return a budget above maintenance — for a
+    // very small/sedentary person the safety floor can sit above TDEE, and
+    // prescribing a surplus under a "lose fat" label is simply wrong. Cap at
+    // TDEE so the worst case is maintenance, not a surplus.
     if (goal === 'lose') {
       delta = Math.min(delta, t * 0.25);
-      return round(Math.max(t - delta, floor));
+      return round(Math.min(Math.max(t - delta, floor), t));
     }
     if (goal === 'gain') return round(t + Math.min(delta, 500));
     if (goal === 'recomp') {
       // mild ~12% deficit: enough to lose fat while high protein +
       // strength training builds muscle
-      return round(Math.max(t * 0.88, floor));
+      return round(Math.min(Math.max(t * 0.88, floor), t));
     }
     return t;
   }
@@ -96,10 +100,15 @@
     var goal = goalOf(profile);
     // plant-based targets are set slightly lower — achievable with dals,
     // paneer/tofu, soya and dairy rather than aspirational
+    // Plant targets are set lower than omnivore: a high-protein day on a
+    // deficit is genuinely hard on Indian veg food, and an unreachable
+    // target just makes every generated plan look like a failure. These
+    // levels are still high enough to protect/build lean mass and are
+    // attainable with paneer, tofu, soya, dal, besan and dairy.
     var plant = profile.dietPref === 'veg' || profile.dietPref === 'vegan' || profile.dietPref === 'jain';
-    var proteinPerKg = goal === 'lose' ? (plant ? 1.4 : 1.6)
-      : goal === 'gain' ? (plant ? 1.6 : 1.8)
-        : goal === 'recomp' ? (plant ? 1.8 : 2.0) // protein is the recomp lever
+    var proteinPerKg = goal === 'lose' ? (plant ? 1.2 : 1.6)
+      : goal === 'gain' ? (plant ? 1.4 : 1.8)
+        : goal === 'recomp' ? (plant ? 1.4 : 2.0) // protein is the recomp lever
           : (plant ? 1.1 : 1.2);
     var refWeight = goal === 'lose' ? profile.goalWeightKg : profile.weightKg;
     var protein = Math.min(refWeight * proteinPerKg, kcal * 0.35 / 4);
