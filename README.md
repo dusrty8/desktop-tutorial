@@ -19,6 +19,27 @@ python3 -m http.server 8000
 # then open http://localhost:8000
 ```
 
+## Use it on your phone (Android & iOS)
+
+Annapurna is a **PWA** — it installs to your home screen and works fully
+offline (your data lives on the phone in localStorage).
+
+1. **Host it once.** Merging this repo to `main` triggers the included
+   GitHub Pages workflow (`.github/workflows/deploy-pages.yml`), which
+   publishes the app at `https://<your-username>.github.io/<repo>/`.
+   (Any static HTTPS host works.)
+2. **Android (Chrome):** open the URL → menu **⋮** → **Add to Home screen**
+   (or the automatic "Install app" prompt). It opens full-screen like a
+   native app.
+3. **iPhone/iPad (Safari):** open the URL → **Share** □↑ → **Add to Home
+   Screen**. It launches standalone with the Annapurna icon.
+4. After the first visit the app works **offline** — food database, logging,
+   plans, weight tracking, everything.
+
+> Data is per-device (browser storage). To move between phone and laptop,
+> use **Profile → Export backup** on one device and **Import backup** on the
+> other.
+
 ## What it does
 
 - **Profile & goals** — enter age, sex, height, weight, goal weight,

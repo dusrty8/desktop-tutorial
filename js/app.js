@@ -591,4 +591,10 @@
       switchView('profile');
     });
   }
+
+  // PWA: offline cache + installability (Android "Install app", iOS Safari
+  // "Add to Home Screen"). Skipped on file:// where SWs aren't allowed.
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* offline mode unavailable */ });
+  }
 })();

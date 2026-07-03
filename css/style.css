@@ -53,13 +53,14 @@ body {
   background: var(--page);
   color: var(--ink);
   line-height: 1.5;
-  padding-bottom: 72px;
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  -webkit-tap-highlight-color: transparent;
 }
 
 .app-header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 14px 20px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px)) 14px calc(20px + env(safe-area-inset-left, 0px));
   display: flex;
   align-items: baseline;
   gap: 12px;
@@ -85,6 +86,7 @@ body {
   padding: 12px 14px; font-size: 0.9rem; color: var(--ink-2);
   cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
   font-family: inherit;
+  min-height: 44px; /* comfortable touch target */
 }
 .tabs button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .tabs button:hover { color: var(--ink); }
@@ -288,9 +290,37 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 .date-nav button { min-width: 36px; }
 
 .toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
   background: var(--ink); color: var(--page);
   padding: 10px 18px; border-radius: 99px; font-size: 0.85rem; z-index: 99;
   opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  max-width: 92vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .toast.show { opacity: 1; }
+
+/* ---- phone-size adjustments ---- */
+@media (max-width: 600px) {
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  input[type="text"], input[type="number"], input[type="date"], select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  button.btn { min-height: 44px; }
+  button.icon-btn { padding: 8px 10px; }
+  .app-header { padding-top: calc(10px + env(safe-area-inset-top, 0px)); padding-bottom: 10px; }
+  .app-header h1 { font-size: 1.1rem; }
+  .app-header .tagline { display: none; }
+  main { padding: 14px 10px; }
+  .card { padding: 14px; border-radius: 10px; }
+  .stat { flex: 1 1 40%; padding: 10px 12px; }
+  .stat .value { font-size: 1.25rem; }
+  .tabs { padding: 0 4px; }
+  .tabs button { padding: 12px 10px; font-size: 0.85rem; }
+  .food-list { max-height: 60vh; }
+  .modal { padding: 16px; border-radius: 12px; max-height: 86vh; }
+  .date-nav { flex-wrap: wrap; }
+  .plan-day { padding: 10px 12px; }
+  .plan-day h3 { flex-direction: column; gap: 2px; }
+  .workout-item { flex-direction: column; gap: 0; }
+  .workout-item .wi-detail { text-align: left; }
+}
