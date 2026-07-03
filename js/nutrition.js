@@ -20,6 +20,17 @@
     { id: 'aggressive', name: 'Aggressive — 0.75 kg/week', kgPerWeek: 0.75 }
   ];
 
+  /* Goal modes. 'auto' infers lose/gain/maintain from current vs goal
+     weight; 'recomp' (build muscle + lose fat together) runs a mild deficit
+     with high protein and strength-first training. */
+  var GOAL_MODES = [
+    { id: 'auto', name: 'Auto — from my goal weight' },
+    { id: 'lose', name: 'Lose fat' },
+    { id: 'gain', name: 'Build muscle (gain)' },
+    { id: 'recomp', name: 'Build muscle + lose fat (recomposition)' },
+    { id: 'maintain', name: 'Maintain' }
+  ];
+
   var DIET_PREFS = [
     { id: 'veg', name: 'Vegetarian' },
     { id: 'vegan', name: 'Vegan' },
@@ -46,6 +57,7 @@
   }
 
   function goalOf(profile) {
+    if (profile.goalMode && profile.goalMode !== 'auto') return profile.goalMode;
     var diff = profile.goalWeightKg - profile.weightKg;
     if (diff < -0.5) return 'lose';
     if (diff > 0.5) return 'gain';
@@ -63,12 +75,17 @@
     var t = tdee(profile);
     var goal = goalOf(profile);
     var delta = paceKg(profile) * 7700 / 7;
+    var floor = profile.sex === 'male' ? 1500 : 1200;
     if (goal === 'lose') {
       delta = Math.min(delta, t * 0.25);
-      var floor = profile.sex === 'male' ? 1500 : 1200;
       return round(Math.max(t - delta, floor));
     }
     if (goal === 'gain') return round(t + Math.min(delta, 500));
+    if (goal === 'recomp') {
+      // mild ~12% deficit: enough to lose fat while high protein +
+      // strength training builds muscle
+      return round(Math.max(t * 0.88, floor));
+    }
     return t;
   }
 
@@ -82,7 +99,8 @@
     var plant = profile.dietPref === 'veg' || profile.dietPref === 'vegan' || profile.dietPref === 'jain';
     var proteinPerKg = goal === 'lose' ? (plant ? 1.4 : 1.6)
       : goal === 'gain' ? (plant ? 1.6 : 1.8)
-        : (plant ? 1.1 : 1.2);
+        : goal === 'recomp' ? (plant ? 1.8 : 2.0) // protein is the recomp lever
+          : (plant ? 1.1 : 1.2);
     var refWeight = goal === 'lose' ? profile.goalWeightKg : profile.weightKg;
     var protein = Math.min(refWeight * proteinPerKg, kcal * 0.35 / 4);
     var fat = kcal * 0.27 / 9;
@@ -180,6 +198,7 @@
   window.Nutrition = {
     ACTIVITY: ACTIVITY,
     PACES: PACES,
+    GOAL_MODES: GOAL_MODES,
     DIET_PREFS: DIET_PREFS,
     bmr: bmr,
     tdee: tdee,

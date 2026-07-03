@@ -48,7 +48,8 @@
     if (name === 'weight') renderWeight();
     if (name === 'database') renderDatabase();
     if (name === 'dietplan') renderDietTargets();
-    if (name === 'log') renderFoodSearch();
+    if (name === 'log') { renderFoodSearch(); renderLogPanel(); }
+    if (name === 'coach') renderCoach();
   }
   $('tabs').addEventListener('click', function (e) {
     if (e.target.dataset && e.target.dataset.view) switchView(e.target.dataset.view);
@@ -63,6 +64,7 @@
 
   function initProfileForm() {
     fillSelect($('pf-activity'), N.ACTIVITY, 'id', 'name');
+    fillSelect($('pf-goalmode'), N.GOAL_MODES, 'id', 'name');
     fillSelect($('pf-pace'), N.PACES, 'id', 'name');
     fillSelect($('pf-diet'), N.DIET_PREFS, 'id', 'name');
     var p = S.profile();
@@ -74,6 +76,7 @@
       $('pf-weight').value = p.weightKg;
       $('pf-goal').value = p.goalWeightKg;
       $('pf-activity').value = p.activity;
+      $('pf-goalmode').value = p.goalMode || 'auto';
       $('pf-pace').value = p.pace;
       $('pf-diet').value = p.dietPref;
       renderProfileSummary(p);
@@ -94,6 +97,7 @@
       sex: $('pf-sex').value,
       age: age, heightCm: h, weightKg: w, goalWeightKg: g,
       activity: $('pf-activity').value,
+      goalMode: $('pf-goalmode').value,
       pace: $('pf-pace').value,
       dietPref: $('pf-diet').value
     };
@@ -104,7 +108,8 @@
     var goal = N.goalOf(p);
     var goalText = goal === 'lose' ? 'Lose ' + (Math.round((p.weightKg - p.goalWeightKg) * 10) / 10) + ' kg'
       : goal === 'gain' ? 'Gain ' + (Math.round((p.goalWeightKg - p.weightKg) * 10) / 10) + ' kg'
-        : 'Maintain weight';
+        : goal === 'recomp' ? 'Recomposition — build muscle & lose fat (mild deficit, high protein)'
+          : 'Maintain weight';
     var b = N.bmi(p);
     $('pf-summary').innerHTML =
       '<div class="stat-row">' +
@@ -225,8 +230,9 @@
             extra.push(it.entry.style === 'light' ? 'light oil' : 'restaurant-style');
           }
           if (it.entry.extraOilTsp) extra.push('+' + it.entry.extraOilTsp + ' tsp oil');
+          var qtyText = it.entry.inputGrams ? it.entry.inputGrams + ' g' : '× ' + it.entry.qty;
           mealsHtml += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name) +
-            ' <span class="entry-detail">× ' + it.entry.qty + (extra.length ? ' · ' + esc(extra.join(', ')) : '') + '</span></span>' +
+            ' <span class="entry-detail">' + qtyText + (extra.length ? ' · ' + esc(extra.join(', ')) : '') + '</span></span>' +
             '<span class="entry-kcal">' + it.computed.kcal + ' kcal</span>' +
             '<button class="icon-btn" data-meal="' + m + '" data-del="' + it.index + '" aria-label="Delete entry">✕</button></div>';
         });
@@ -345,6 +351,20 @@
     $('fm-oil-type').value = 'sunflower';
   }
 
+  function currentModalQty() {
+    if ($('fm-mode').value === 'grams') {
+      var g = parseFloat($('fm-grams').value) || modalFood.grams;
+      return Math.max(Math.round(g / modalFood.grams * 100) / 100, 0.01);
+    }
+    return parseFloat($('fm-qty').value) || 1;
+  }
+
+  function syncModalMode() {
+    var grams = $('fm-mode').value === 'grams';
+    $('fm-qty-field').classList.toggle('hidden', grams);
+    $('fm-grams-field').classList.toggle('hidden', !grams);
+  }
+
   function openFoodModal(foodId) {
     modalFood = P.foodById(foodId);
     if (!modalFood) return;
@@ -352,6 +372,9 @@
     $('fm-serving').textContent = 'Serving: ' + modalFood.unit + ' (' + modalFood.grams + ' g) · ' +
       modalFood.kcal + ' kcal standard';
     $('fm-qty').value = 1;
+    $('fm-mode').value = 'servings';
+    $('fm-grams').value = modalFood.grams;
+    syncModalMode();
     $('fm-style').value = 'standard';
     $('fm-oil-tsp').value = 0;
     $('fm-oil-section').classList.toggle('hidden', !modalFood.oil && modalFood.role !== 'ingredient');
@@ -364,25 +387,27 @@
 
   function updateModalKcal() {
     if (!modalFood) return;
-    var qty = parseFloat($('fm-qty').value) || 1;
-    var e = N.computeEntry(modalFood, qty, $('fm-style').value,
+    var e = N.computeEntry(modalFood, currentModalQty(), $('fm-style').value,
       parseFloat($('fm-oil-tsp').value) || 0, $('fm-oil-type').value);
     $('fm-kcal').textContent = e.kcal + ' kcal';
     $('fm-macros').textContent = 'P ' + e.protein + ' g · C ' + e.carbs + ' g · F ' + e.fat + ' g · fibre ' + e.fiber + ' g · ' + e.grams + ' g';
   }
-  ['fm-qty', 'fm-style', 'fm-oil-tsp', 'fm-oil-type'].forEach(function (id) {
+  ['fm-qty', 'fm-grams', 'fm-style', 'fm-oil-tsp', 'fm-oil-type'].forEach(function (id) {
     $(id).addEventListener('input', updateModalKcal);
     $(id).addEventListener('change', updateModalKcal);
   });
+  $('fm-mode').addEventListener('change', function () { syncModalMode(); updateModalKcal(); });
   $('fm-cancel').addEventListener('click', function () { $('food-modal-backdrop').classList.add('hidden'); });
   $('food-modal-backdrop').addEventListener('click', function (e) {
     if (e.target === this) this.classList.add('hidden');
   });
   $('fm-add').addEventListener('click', function () {
     if (!modalFood) return;
+    var gramsMode = $('fm-mode').value === 'grams';
     var entry = {
       foodId: modalFood.id,
-      qty: parseFloat($('fm-qty').value) || 1,
+      qty: currentModalQty(),
+      inputGrams: gramsMode ? (parseFloat($('fm-grams').value) || modalFood.grams) : null,
       style: $('fm-style').value,
       extraOilTsp: parseFloat($('fm-oil-tsp').value) || 0,
       oilId: $('fm-oil-type').value
@@ -391,6 +416,116 @@
     $('food-modal-backdrop').classList.add('hidden');
     toast('Added ' + modalFood.name + ' to ' + MEAL_NAMES[$('fm-meal').value]);
     renderDashboard();
+    renderLogPanel();
+  });
+
+  /* ---------------- log panel (today so far) ---------------- */
+  function renderLogPanel() {
+    var p = S.profile();
+    var dn = dayNutrition(currentDate);
+    var t = p ? N.macroTargets(p) : null;
+    $('log-panel-title').textContent = currentDate === todayStr() ? 'Today so far' : currentDate + ' so far';
+
+    var remaining = t ? Math.round(t.kcal - dn.totals.kcal + dn.burned) : null;
+    var summary = '<div class="lp-kcal"><strong>' + Math.round(dn.totals.kcal) + '</strong> kcal eaten';
+    if (t) {
+      summary += remaining < 0
+        ? ' · <span class="lp-over">' + Math.abs(remaining) + ' over budget</span>'
+        : ' · <span class="lp-left">' + remaining + ' left</span>';
+    }
+    summary += '</div>';
+    if (t) {
+      [['Protein', 'protein', dn.totals.protein, t.protein],
+       ['Carbs', 'carbs', dn.totals.carbs, t.carbs],
+       ['Fat', 'fat', dn.totals.fat, t.fat]].forEach(function (row) {
+        var pct = Math.min(row[2] / row[3] * 100, 100);
+        summary += '<div class="bar-row">' + row[0] +
+          '<span class="bar-nums">' + Math.round(row[2]) + ' / ' + row[3] + ' g</span>' +
+          '<div class="bar ' + row[1] + '"><span style="width:' + pct + '%"></span></div></div>';
+      });
+    }
+    $('log-panel-summary').innerHTML = summary;
+
+    var html = '';
+    Object.keys(MEAL_NAMES).forEach(function (m) {
+      var pm = dn.perMeal[m];
+      if (!pm.items.length) return;
+      html += '<div class="lp-meal"><div class="pm-title">' + MEAL_NAMES[m] +
+        ' <span class="bar-nums">' + Math.round(pm.kcal) + ' kcal</span></div>';
+      pm.items.forEach(function (it) {
+        var qtyText = it.entry.inputGrams ? it.entry.inputGrams + ' g' : '× ' + it.entry.qty;
+        html += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name.split(' (')[0]) +
+          ' <span class="entry-detail">' + qtyText + '</span></span>' +
+          '<span class="entry-kcal">' + it.computed.kcal + '</span>' +
+          '<button class="icon-btn" data-meal="' + m + '" data-del="' + it.index + '" aria-label="Remove">✕</button></div>';
+      });
+      html += '</div>';
+    });
+    $('log-panel-meals').innerHTML = html || '<p class="hint">Nothing logged yet — everything you add shows up here instantly.</p>';
+  }
+  $('log-panel-meals').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-del]');
+    if (!b) return;
+    S.removeFood(currentDate, b.dataset.meal, parseInt(b.dataset.del, 10));
+    renderLogPanel();
+    renderDashboard();
+  });
+
+  /* ---------------- coach & AI dietician ---------------- */
+  function renderCoach() {
+    var cards = window.Coach.generateAdvice(currentDate);
+    $('coach-cards').innerHTML = cards.map(function (c) {
+      return '<div class="coach-card ' + esc(c.tone) + '"><div class="cc-icon">' + c.icon + '</div>' +
+        '<div class="cc-text"><div class="cc-title">' + esc(c.title) + '</div>' +
+        '<div class="cc-body">' + esc(c.body) + '</div></div></div>';
+    }).join('');
+    var has = window.AI.hasKey();
+    $('ai-locked').classList.toggle('hidden', has);
+    $('ai-unlocked').classList.toggle('hidden', !has);
+  }
+
+  function aiButtonsDisabled(state) {
+    ['ai-checkin', 'ai-weekly', 'ai-ask'].forEach(function (id) { $(id).disabled = state; });
+  }
+
+  function aiRun(promptText, tier) {
+    var out = $('ai-output');
+    out.classList.remove('hidden');
+    out.textContent = tier === 'deep'
+      ? 'Reviewing your last two weeks (Claude Sonnet)…'
+      : 'Checking your day (Claude Haiku)…';
+    aiButtonsDisabled(true);
+    window.AI.ask(promptText, tier).then(function (text) {
+      out.textContent = text; // textContent keeps any model output inert
+      aiButtonsDisabled(false);
+    }, function (err) {
+      out.textContent = err && err.message === 'no-profile'
+        ? 'Set up your profile first — the dietician needs your goals and logs.'
+        : 'Could not reach the AI dietician: ' + (err && err.message ? err.message : 'unknown error');
+      aiButtonsDisabled(false);
+    });
+  }
+
+  $('ai-key-save').addEventListener('click', function () {
+    var k = $('ai-key-input').value.trim();
+    if (!k) { toast('Paste your Anthropic API key first'); return; }
+    window.AI.setKey(k);
+    $('ai-key-input').value = '';
+    toast('AI dietician connected');
+    renderCoach();
+  });
+  $('ai-key-clear').addEventListener('click', function () {
+    window.AI.setKey('');
+    $('ai-output').classList.add('hidden');
+    toast('Key removed from this browser');
+    renderCoach();
+  });
+  $('ai-checkin').addEventListener('click', function () { aiRun(window.AI.PROMPTS.checkin, 'quick'); });
+  $('ai-weekly').addEventListener('click', function () { aiRun(window.AI.PROMPTS.weekly, 'deep'); });
+  $('ai-ask').addEventListener('click', function () {
+    var q = $('ai-question').value.trim();
+    if (!q) { toast('Type a question first'); return; }
+    aiRun(q, $('ai-deep').checked ? 'deep' : 'quick');
   });
 
   /* ---------------- diet plan ---------------- */
@@ -461,7 +596,7 @@
       days: parseInt($('wo-days').value, 10),
       place: $('wo-place').value
     });
-    var goalText = { lose: 'fat loss', gain: 'muscle gain', maintain: 'general fitness' }[plan.goal];
+    var goalText = { lose: 'fat loss', gain: 'muscle gain', recomp: 'recomposition (muscle + fat loss)', maintain: 'general fitness' }[plan.goal];
     var html = '<p class="hint" style="margin-bottom:10px">Built for <strong>' + goalText +
       '</strong> · estimated burn <strong>~' + plan.weeklyKcal + ' kcal/week</strong> at your current weight. ' +
       'Warm up 5 min before and stretch 5 min after every session.</p>';

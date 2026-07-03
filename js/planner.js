@@ -324,6 +324,9 @@
       seq = [strength[0], 'cardio', strength[1], 'hiit', 'cardio', 'yoga'];
     } else if (goal === 'gain') {
       seq = [strength[0], strength[1], 'recovery', strength[0], strength[1], 'cardio'];
+    } else if (goal === 'recomp') {
+      // strength-first (muscle stimulus) with enough cardio for the deficit
+      seq = [strength[0], strength[1], 'cardio', strength[0], 'hiit', 'yoga'];
     } else {
       seq = [strength[0], 'cardio', 'yoga', strength[1], 'hiit', 'recovery'];
     }

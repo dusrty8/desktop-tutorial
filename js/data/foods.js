@@ -318,6 +318,42 @@
   F('mixed-seeds', 'Mixed seeds (pumpkin, sunflower, flax)', NT, 'vegan', '1 tbsp (15 g)', 15, 85, 3.5, 2.5, 7.0, 1.8, { role: 'snack', tags: ['gf'] });
   F('peanut-butter', 'Peanut butter', NT, 'vegan', '1 tbsp (16 g)', 16, 95, 4.0, 3.5, 8.0, 1.0, { role: 'side', tags: ['gf', 'boost'] });
 
+  /* ---------------- Regional Specialities ---------------- */
+  var RG = 'Regional Specialities';
+  F('nattu-kozhi-curry', 'Country chicken curry (nattu kozhi)', RG, 'nonveg', '1 katori (150 g)', 150, 190, 22.0, 6.0, 9.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf', 'boost'], aka: ['Desi murgh curry', 'Naati koli saaru', 'Country chicken'] });
+  F('kodi-vepudu', 'Andhra chicken fry (kodi vepudu)', RG, 'nonveg', '1 plate (100 g)', 100, 250, 20.0, 6.0, 16.0, 1.0, { role: 'main', oil: true, fried: 'shallow', tags: ['og', 'gf'], aka: ['Chicken vepudu'] });
+  F('chicken-ghee-roast', 'Chicken ghee roast (Mangalorean)', RG, 'nonveg', '1 katori (150 g)', 150, 300, 21.0, 7.0, 21.0, 1.5, { role: 'main', oil: true, tags: ['dairy', 'og', 'gf'] });
+  F('gongura-mutton', 'Gongura mutton', RG, 'nonveg', '1 katori (150 g)', 150, 320, 21.0, 7.0, 23.0, 2.0, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('kerala-beef-fry', 'Beef fry (Kerala)', RG, 'nonveg', '1 plate (100 g)', 100, 260, 19.0, 5.0, 18.0, 1.5, { role: 'main', oil: true, fried: 'shallow', tags: ['og', 'gf'], aka: ['Beef ularthiyathu'] });
+  F('pork-vindaloo', 'Pork vindaloo (Goan)', RG, 'nonveg', '1 katori (150 g)', 150, 310, 20.0, 9.0, 21.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('kerala-chicken-stew', 'Chicken stew (Kerala ishtu)', RG, 'nonveg', '1 katori (150 g)', 150, 230, 16.0, 9.0, 14.0, 1.5, { role: 'main', oil: true, tags: ['og', 'root', 'gf'], aka: ['Chicken ishtu'] });
+  F('kerala-veg-stew', 'Vegetable stew (Kerala)', RG, 'vegan', '1 katori (150 g)', 150, 140, 2.5, 12.0, 9.0, 2.5, { role: 'main', oil: true, tags: ['root', 'gf'], aka: ['Veg ishtu'] });
+  F('haleem', 'Haleem (Hyderabadi)', RG, 'nonveg', '1 bowl (150 g)', 150, 280, 16.0, 20.0, 15.0, 3.0, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('nihari', 'Nihari', RG, 'nonveg', '1 katori (150 g)', 150, 320, 21.0, 8.0, 22.0, 1.0, { role: 'main', oil: true, tags: ['og'] });
+  F('laal-maas', 'Laal maas (Rajasthani)', RG, 'nonveg', '1 katori (150 g)', 150, 330, 22.0, 6.0, 24.0, 1.5, { role: 'main', oil: true, tags: ['og', 'dairy', 'gf'] });
+  F('amritsari-fish', 'Amritsari fish (fried)', RG, 'nonveg', '1 plate (100 g)', 100, 240, 17.0, 10.0, 14.0, 0.8, { role: 'snack', fried: 'deep', tags: ['og', 'gf'] });
+  F('kerala-egg-roast', 'Egg roast (Kerala)', RG, 'egg', '2 eggs + masala (200 g)', 200, 290, 14.0, 10.0, 21.0, 2.0, { role: 'main', oil: true, tags: ['og', 'gf'], aka: ['Mutta roast'] });
+  F('chingri-malai', 'Chingri malai curry (Bengali)', RG, 'nonveg', '1 katori (150 g)', 150, 240, 17.0, 8.0, 16.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf'], aka: ['Prawn malai curry'] });
+  F('mutton-dhansak', 'Mutton dhansak (Parsi)', RG, 'nonveg', '1 katori (150 g)', 150, 280, 18.0, 15.0, 16.0, 3.5, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('litti-chokha', 'Litti chokha (Bihari)', RG, 'veg', '2 litti + chokha (250 g)', 250, 380, 10.0, 55.0, 13.0, 6.0, { role: 'main', tags: ['og', 'root', 'dairy', 'meal'] });
+  F('dal-baati-churma', 'Dal baati churma (Rajasthani)', RG, 'veg', '1 plate (250 g)', 250, 550, 12.0, 70.0, 24.0, 6.0, { role: 'main', tags: ['dairy', 'og', 'meal'] });
+  F('aloo-posto', 'Aloo posto (Bengali)', RG, 'vegan', '1 katori (150 g)', 150, 190, 4.0, 20.0, 11.0, 2.5, { role: 'sabzi', oil: true, tags: ['root', 'gf'] });
+  F('shukto', 'Shukto (Bengali)', RG, 'veg', '1 katori (150 g)', 150, 130, 4.0, 14.0, 7.0, 3.5, { role: 'sabzi', oil: true, tags: ['root', 'dairy', 'gf'] });
+  F('undhiyu', 'Undhiyu (Gujarati)', RG, 'vegan', '1 katori (150 g)', 150, 220, 5.0, 22.0, 13.0, 5.0, { role: 'main', oil: true, tags: ['og', 'root', 'gf'] });
+  F('baingan-salan', 'Baghare baingan / salan (Hyderabadi)', RG, 'vegan', '1 katori (150 g)', 150, 210, 4.5, 12.0, 16.0, 3.5, { role: 'sabzi', oil: true, tags: ['og', 'gf'], aka: ['Mirchi ka salan'] });
+  F('kadala-curry', 'Kadala curry (Kerala black chana)', RG, 'vegan', '1 katori (150 g)', 150, 210, 9.0, 25.0, 8.0, 6.5, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('veg-kurma', 'Vegetable kurma', RG, 'veg', '1 katori (150 g)', 150, 190, 4.5, 16.0, 12.0, 3.5, { role: 'main', oil: true, tags: ['og', 'root', 'dairy', 'gf'], aka: ['Veg korma'] });
+  F('parotta', 'Malabar parotta', RG, 'veg', '1 parotta (90 g)', 90, 300, 5.5, 40.0, 13.0, 1.5, { role: 'staple', oil: true, tags: ['dairy'], aka: ['Kerala parotta', 'Barotta'] });
+  F('kothu-parotta', 'Kothu parotta (egg)', RG, 'egg', '1 plate (250 g)', 250, 450, 14.0, 55.0, 19.0, 3.0, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('neer-dosa', 'Neer dosa', RG, 'vegan', '2 dosas (80 g)', 80, 120, 2.0, 24.0, 1.5, 1.0, { role: 'breakfast', tags: ['gf'] });
+  F('ragi-mudde', 'Ragi mudde (Karnataka)', RG, 'vegan', '1 ball (150 g)', 150, 190, 4.0, 40.0, 1.0, 5.0, { role: 'staple', tags: ['gf'], aka: ['Ragi ball', 'Ragi sangati'] });
+  F('akki-roti', 'Akki roti (Karnataka)', RG, 'vegan', '1 roti (80 g)', 80, 180, 4.0, 30.0, 5.0, 2.0, { role: 'breakfast', oil: true, tags: ['og', 'gf'] });
+  F('handvo', 'Handvo (Gujarati)', RG, 'veg', '1 slice (100 g)', 100, 190, 6.0, 22.0, 9.0, 3.0, { role: 'snack', oil: true, tags: ['dairy', 'gf'] });
+  F('muthiya', 'Muthiya (steamed, Gujarati)', RG, 'vegan', '5 pieces (100 g)', 100, 150, 5.0, 22.0, 5.0, 3.0, { role: 'snack', oil: true, tags: ['og'] });
+  F('sabudana-vada', 'Sabudana vada', RG, 'vegan', '2 vadas (80 g)', 80, 260, 4.0, 30.0, 14.0, 1.5, { role: 'snack', fried: 'deep', tags: ['root', 'gf'] });
+  F('paneer-tikka', 'Paneer tikka (grilled)', RG, 'veg', '6 pieces (100 g)', 100, 220, 14.0, 6.0, 16.0, 1.0, { role: 'snack', tags: ['dairy', 'og', 'gf', 'boost'] });
+  F('misti-doi', 'Mishti doi (Bengali)', RG, 'veg', '1 katori (100 g)', 100, 180, 4.0, 25.0, 7.0, 0.0, { role: 'sweet', tags: ['dairy', 'gf'], aka: ['Misti doi', 'Sweet curd'] });
+
   /* ---------------- Basics & Ingredients ---------------- */
   var IN = 'Basics & Ingredients';
   F('ghee', 'Ghee', IN, 'veg', '1 tsp (5 g)', 5, 45, 0.0, 0.0, 5.0, 0.0, { role: 'ingredient', tags: ['dairy', 'gf'], aka: ['Clarified butter'] });

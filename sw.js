@@ -4,7 +4,7 @@
  * (stale-while-revalidate) so the app works fully offline and still
  * picks up updates. Bump VERSION on every release.
  */
-var VERSION = 'annapurna-v1';
+var VERSION = 'annapurna-v2';
 var ASSETS = [
   './',
   './index.html',
@@ -15,6 +15,8 @@ var ASSETS = [
   './js/nutrition.js',
   './js/store.js',
   './js/planner.js',
+  './js/coach.js',
+  './js/ai.js',
   './js/charts.js',
   './js/app.js',
   './icons/icon-192.png',
