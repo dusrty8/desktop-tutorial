@@ -7,6 +7,15 @@
 (function () {
   'use strict';
 
+  // Local HTML-escaper — charts.js is a standalone module and must not depend
+  // on app.js's private esc(). Values reaching the tooltip are already
+  // numeric/date-validated, so this is defense-in-depth.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function svgEl(tag, attrs) {
     var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (var k in attrs) el.setAttribute(k, attrs[k]);
