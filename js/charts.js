@@ -7,6 +7,15 @@
 (function () {
   'use strict';
 
+  // Local HTML-escaper — charts.js is a standalone module and must not depend
+  // on app.js's private esc(). Values reaching the tooltip are already
+  // numeric/date-validated, so this is defense-in-depth.
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
   function svgEl(tag, attrs) {
     var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
     for (var k in attrs) el.setAttribute(k, attrs[k]);
@@ -94,7 +103,7 @@
       cross.setAttribute('x1', x(best)); cross.setAttribute('x2', x(best));
       cross.setAttribute('visibility', 'visible');
       tip.style.display = 'block';
-      tip.innerHTML = '<strong>' + points[best].kg + ' kg</strong><br>' + points[best].date;
+      tip.innerHTML = '<strong>' + esc(points[best].kg) + ' kg</strong><br>' + esc(points[best].date);
       var px = x(best) * rect.width / W;
       tip.style.left = Math.min(Math.max(px - 40, 0), rect.width - 96) + 'px';
       tip.style.top = (y(points[best].kg) * rect.height / H - 52) + 'px';
@@ -148,5 +157,46 @@
     container.appendChild(svg);
   }
 
-  window.Charts = { lineChart: lineChart, donut: donut };
+  /*
+   * Calorie ring gauge — a thick circular progress ring for the dashboard
+   * hero. `fraction` is eaten ÷ budget; values > 1 (over budget) draw the
+   * base ring full plus a red overflow arc. centerTop/centerBottom are the
+   * big number and its caption. `over` flips the ring to the critical color.
+   */
+  function ring(container, fraction, centerTop, centerBottom, over) {
+    container.innerHTML = '';
+    var W = 190, H = 190, cx = W / 2, cy = H / 2, r = 78, stroke = 16;
+    var circ = 2 * Math.PI * r;
+    var svg = svgEl('svg', { viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-label': 'Calories used against budget' });
+    // track
+    svg.appendChild(svgEl('circle', { cx: cx, cy: cy, r: r, fill: 'none', 'class': 'ring-track', 'stroke-width': stroke }));
+    var f = Math.max(fraction, 0);
+    var base = Math.min(f, 1);
+    var rot = 'rotate(-90 ' + cx + ' ' + cy + ')';
+    if (base > 0) {
+      svg.appendChild(svgEl('circle', {
+        cx: cx, cy: cy, r: r, fill: 'none',
+        'class': over ? 'ring-fill over' : 'ring-fill',
+        'stroke-width': stroke, 'stroke-linecap': 'round',
+        'stroke-dasharray': (circ * base) + ' ' + circ, transform: rot
+      }));
+    }
+    if (f > 1) {
+      // overflow arc (over budget) sits on top, in the critical color
+      var overFrac = Math.min(f - 1, 1);
+      svg.appendChild(svgEl('circle', {
+        cx: cx, cy: cy, r: r, fill: 'none',
+        'class': 'ring-over', 'stroke-width': stroke, 'stroke-linecap': 'round',
+        'stroke-dasharray': (circ * overFrac) + ' ' + circ, transform: rot
+      }));
+    }
+    var t1 = svgEl('text', { x: cx, y: cy - 4, 'text-anchor': 'middle', 'class': over ? 'ring-top over' : 'ring-top' });
+    t1.textContent = centerTop;
+    var t2 = svgEl('text', { x: cx, y: cy + 20, 'text-anchor': 'middle', 'class': 'ring-bottom' });
+    t2.textContent = centerBottom;
+    svg.appendChild(t1); svg.appendChild(t2);
+    container.appendChild(svg);
+  }
+
+  window.Charts = { lineChart: lineChart, donut: donut, ring: ring };
 })();

@@ -11,7 +11,10 @@
  * fat, fiber (grams), plus options:
  *   role  — slot used by the diet-plan generator
  *           staple | main | sabzi | side | breakfast | snack | beverage |
- *           fruit | sweet | ingredient
+ *           fruit | sweet | ingredient | supplement
+ *           ('supplement' foods are fully loggable/searchable but are never
+ *            auto-inserted into generated diet plans or coach suggestions —
+ *            supplements are opt-in, not pushed)
  *   aka   — alternate/regional names (searchable)
  *   tags  — dairy | og (onion-garlic) | root | gf (gluten-free) |
  *           boost (protein booster) | meal (complete one-plate meal, the
@@ -318,6 +321,42 @@
   F('mixed-seeds', 'Mixed seeds (pumpkin, sunflower, flax)', NT, 'vegan', '1 tbsp (15 g)', 15, 85, 3.5, 2.5, 7.0, 1.8, { role: 'snack', tags: ['gf'] });
   F('peanut-butter', 'Peanut butter', NT, 'vegan', '1 tbsp (16 g)', 16, 95, 4.0, 3.5, 8.0, 1.0, { role: 'side', tags: ['gf', 'boost'] });
 
+  /* ---------------- Regional Specialities ---------------- */
+  var RG = 'Regional Specialities';
+  F('nattu-kozhi-curry', 'Country chicken curry (nattu kozhi)', RG, 'nonveg', '1 katori (150 g)', 150, 190, 22.0, 6.0, 9.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf', 'boost'], aka: ['Desi murgh curry', 'Naati koli saaru', 'Country chicken'] });
+  F('kodi-vepudu', 'Andhra chicken fry (kodi vepudu)', RG, 'nonveg', '1 plate (100 g)', 100, 250, 20.0, 6.0, 16.0, 1.0, { role: 'main', oil: true, fried: 'shallow', tags: ['og', 'gf'], aka: ['Chicken vepudu'] });
+  F('chicken-ghee-roast', 'Chicken ghee roast (Mangalorean)', RG, 'nonveg', '1 katori (150 g)', 150, 300, 21.0, 7.0, 21.0, 1.5, { role: 'main', oil: true, tags: ['dairy', 'og', 'gf'] });
+  F('gongura-mutton', 'Gongura mutton', RG, 'nonveg', '1 katori (150 g)', 150, 320, 21.0, 7.0, 23.0, 2.0, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('kerala-beef-fry', 'Beef fry (Kerala)', RG, 'nonveg', '1 plate (100 g)', 100, 260, 19.0, 5.0, 18.0, 1.5, { role: 'main', oil: true, fried: 'shallow', tags: ['og', 'gf'], aka: ['Beef ularthiyathu'] });
+  F('pork-vindaloo', 'Pork vindaloo (Goan)', RG, 'nonveg', '1 katori (150 g)', 150, 310, 20.0, 9.0, 21.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('kerala-chicken-stew', 'Chicken stew (Kerala ishtu)', RG, 'nonveg', '1 katori (150 g)', 150, 230, 16.0, 9.0, 14.0, 1.5, { role: 'main', oil: true, tags: ['og', 'root', 'gf'], aka: ['Chicken ishtu'] });
+  F('kerala-veg-stew', 'Vegetable stew (Kerala)', RG, 'vegan', '1 katori (150 g)', 150, 140, 2.5, 12.0, 9.0, 2.5, { role: 'main', oil: true, tags: ['root', 'gf'], aka: ['Veg ishtu'] });
+  F('haleem', 'Haleem (Hyderabadi)', RG, 'nonveg', '1 bowl (150 g)', 150, 280, 16.0, 20.0, 15.0, 3.0, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('nihari', 'Nihari', RG, 'nonveg', '1 katori (150 g)', 150, 320, 21.0, 8.0, 22.0, 1.0, { role: 'main', oil: true, tags: ['og'] });
+  F('laal-maas', 'Laal maas (Rajasthani)', RG, 'nonveg', '1 katori (150 g)', 150, 330, 22.0, 6.0, 24.0, 1.5, { role: 'main', oil: true, tags: ['og', 'dairy', 'gf'] });
+  F('amritsari-fish', 'Amritsari fish (fried)', RG, 'nonveg', '1 plate (100 g)', 100, 240, 17.0, 10.0, 14.0, 0.8, { role: 'snack', fried: 'deep', tags: ['og', 'gf'] });
+  F('kerala-egg-roast', 'Egg roast (Kerala)', RG, 'egg', '2 eggs + masala (200 g)', 200, 290, 14.0, 10.0, 21.0, 2.0, { role: 'main', oil: true, tags: ['og', 'gf'], aka: ['Mutta roast'] });
+  F('chingri-malai', 'Chingri malai curry (Bengali)', RG, 'nonveg', '1 katori (150 g)', 150, 240, 17.0, 8.0, 16.0, 1.5, { role: 'main', oil: true, tags: ['og', 'gf'], aka: ['Prawn malai curry'] });
+  F('mutton-dhansak', 'Mutton dhansak (Parsi)', RG, 'nonveg', '1 katori (150 g)', 150, 280, 18.0, 15.0, 16.0, 3.5, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('litti-chokha', 'Litti chokha (Bihari)', RG, 'veg', '2 litti + chokha (250 g)', 250, 380, 10.0, 55.0, 13.0, 6.0, { role: 'main', tags: ['og', 'root', 'dairy', 'meal'] });
+  F('dal-baati-churma', 'Dal baati churma (Rajasthani)', RG, 'veg', '1 plate (250 g)', 250, 550, 12.0, 70.0, 24.0, 6.0, { role: 'main', tags: ['dairy', 'og', 'meal'] });
+  F('aloo-posto', 'Aloo posto (Bengali)', RG, 'vegan', '1 katori (150 g)', 150, 190, 4.0, 20.0, 11.0, 2.5, { role: 'sabzi', oil: true, tags: ['root', 'gf'] });
+  F('shukto', 'Shukto (Bengali)', RG, 'veg', '1 katori (150 g)', 150, 130, 4.0, 14.0, 7.0, 3.5, { role: 'sabzi', oil: true, tags: ['root', 'dairy', 'gf'] });
+  F('undhiyu', 'Undhiyu (Gujarati)', RG, 'vegan', '1 katori (150 g)', 150, 220, 5.0, 22.0, 13.0, 5.0, { role: 'main', oil: true, tags: ['og', 'root', 'gf'] });
+  F('baingan-salan', 'Baghare baingan / salan (Hyderabadi)', RG, 'vegan', '1 katori (150 g)', 150, 210, 4.5, 12.0, 16.0, 3.5, { role: 'sabzi', oil: true, tags: ['og', 'gf'], aka: ['Mirchi ka salan'] });
+  F('kadala-curry', 'Kadala curry (Kerala black chana)', RG, 'vegan', '1 katori (150 g)', 150, 210, 9.0, 25.0, 8.0, 6.5, { role: 'main', oil: true, tags: ['og', 'gf'] });
+  F('veg-kurma', 'Vegetable kurma', RG, 'veg', '1 katori (150 g)', 150, 190, 4.5, 16.0, 12.0, 3.5, { role: 'main', oil: true, tags: ['og', 'root', 'dairy', 'gf'], aka: ['Veg korma'] });
+  F('parotta', 'Malabar parotta', RG, 'veg', '1 parotta (90 g)', 90, 300, 5.5, 40.0, 13.0, 1.5, { role: 'staple', oil: true, tags: ['dairy'], aka: ['Kerala parotta', 'Barotta'] });
+  F('kothu-parotta', 'Kothu parotta (egg)', RG, 'egg', '1 plate (250 g)', 250, 450, 14.0, 55.0, 19.0, 3.0, { role: 'main', oil: true, tags: ['og', 'meal'] });
+  F('neer-dosa', 'Neer dosa', RG, 'vegan', '2 dosas (80 g)', 80, 120, 2.0, 24.0, 1.5, 1.0, { role: 'breakfast', tags: ['gf'] });
+  F('ragi-mudde', 'Ragi mudde (Karnataka)', RG, 'vegan', '1 ball (150 g)', 150, 190, 4.0, 40.0, 1.0, 5.0, { role: 'staple', tags: ['gf'], aka: ['Ragi ball', 'Ragi sangati'] });
+  F('akki-roti', 'Akki roti (Karnataka)', RG, 'vegan', '1 roti (80 g)', 80, 180, 4.0, 30.0, 5.0, 2.0, { role: 'breakfast', oil: true, tags: ['og', 'gf'] });
+  F('handvo', 'Handvo (Gujarati)', RG, 'veg', '1 slice (100 g)', 100, 190, 6.0, 22.0, 9.0, 3.0, { role: 'snack', oil: true, tags: ['dairy', 'gf'] });
+  F('muthiya', 'Muthiya (steamed, Gujarati)', RG, 'vegan', '5 pieces (100 g)', 100, 150, 5.0, 22.0, 5.0, 3.0, { role: 'snack', oil: true, tags: ['og'] });
+  F('sabudana-vada', 'Sabudana vada', RG, 'vegan', '2 vadas (80 g)', 80, 260, 4.0, 30.0, 14.0, 1.5, { role: 'snack', fried: 'deep', tags: ['root', 'gf'] });
+  F('paneer-tikka', 'Paneer tikka (grilled)', RG, 'veg', '6 pieces (100 g)', 100, 220, 14.0, 6.0, 16.0, 1.0, { role: 'snack', tags: ['dairy', 'og', 'gf', 'boost'] });
+  F('misti-doi', 'Mishti doi (Bengali)', RG, 'veg', '1 katori (100 g)', 100, 180, 4.0, 25.0, 7.0, 0.0, { role: 'sweet', tags: ['dairy', 'gf'], aka: ['Misti doi', 'Sweet curd'] });
+
   /* ---------------- Basics & Ingredients ---------------- */
   var IN = 'Basics & Ingredients';
   F('ghee', 'Ghee', IN, 'veg', '1 tsp (5 g)', 5, 45, 0.0, 0.0, 5.0, 0.0, { role: 'ingredient', tags: ['dairy', 'gf'], aka: ['Clarified butter'] });
@@ -340,6 +379,70 @@
   F('soya-chunks-dry', 'Soya chunks (dry)', IN, 'vegan', '30 g', 30, 100, 15.8, 9.0, 0.2, 4.0, { role: 'ingredient', tags: ['gf', 'boost'], aka: ['Meal maker'] });
   F('oats-raw', 'Oats (raw)', IN, 'vegan', '40 g', 40, 152, 5.4, 25.0, 3.2, 4.0, { role: 'ingredient' });
   F('milk-100', 'Milk, toned (100 ml)', IN, 'veg', '100 ml', 100, 60, 3.2, 4.8, 3.0, 0.0, { role: 'ingredient', tags: ['dairy', 'gf'] });
+
+  /* ---------------- Protein Supplements ----------------
+     Values are REPRESENTATIVE label figures per scoop/serving for the
+     India market. Flavor barely changes macros (±a few kcal), so flavors
+     are searchable aliases here rather than duplicate rows — search
+     "kesar pista", "cookies and cream", etc. and adjust to your tub's label
+     if it differs. Whey/casein/gainers are 'veg' (milk-derived); pea/soy
+     are 'vegan'. Role 'supplement' keeps them out of auto diet plans. */
+  var PS = 'Protein Supplements';
+  var FLAV = ['Chocolate', 'Rich Chocolate', 'Vanilla', 'Strawberry', 'Kesar Pista', 'Mango', 'Cafe Mocha', 'Cookies and Cream', 'Banana'];
+  F('whey-concentrate-generic', 'Whey protein — generic (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 130, 24.0, 4.0, 2.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['whey concentrate', 'protein powder', 'whey shake', 'protein shake'].concat(FLAV) });
+  F('whey-isolate-generic', 'Whey isolate — generic (1 scoop)', PS, 'veg', '1 scoop (30 g)', 30, 110, 27.0, 1.0, 0.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['whey isolate', 'iso protein', 'isolate'].concat(FLAV) });
+  F('plant-protein-generic', 'Plant protein — generic (1 scoop)', PS, 'vegan', '1 scoop (30 g)', 30, 120, 24.0, 3.0, 2.0, 1.0, { role: 'supplement', tags: ['gf'], aka: ['pea protein', 'vegan protein', 'plant based protein'].concat(FLAV) });
+  F('casein-generic', 'Casein protein — generic (1 scoop)', PS, 'veg', '1 scoop (34 g)', 34, 120, 24.0, 3.0, 1.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['slow protein', 'night protein', 'micellar casein'].concat(FLAV) });
+  F('soy-protein-generic', 'Soy protein isolate — generic (1 scoop)', PS, 'vegan', '1 scoop (30 g)', 30, 110, 27.0, 1.0, 0.5, 0.0, { role: 'supplement', tags: ['gf'], aka: ['soya protein', 'soy isolate'] });
+  F('mass-gainer-generic', 'Mass gainer — generic (per 100 g)', PS, 'veg', '100 g', 100, 380, 15.0, 75.0, 2.5, 1.0, { role: 'supplement', tags: ['dairy'], aka: ['weight gainer', 'gainer'].concat(FLAV) });
+  F('egg-protein-generic', 'Egg white protein (1 scoop)', PS, 'egg', '1 scoop (30 g)', 30, 110, 24.0, 2.0, 0.5, 0.0, { role: 'supplement', tags: ['gf'], aka: ['egg albumin protein'] });
+  // Whey — branded (concentrate/blend)
+  F('mb-biozyme', 'MuscleBlaze Biozyme Performance Whey (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 132, 25.0, 3.6, 1.9, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['MuscleBlaze', 'Biozyme', 'Rich Chocolate', 'Kesar Pista', 'Magical Mango', 'Chocolate Hazelnut'] });
+  F('on-gold-whey', 'ON Gold Standard 100% Whey (1 scoop)', PS, 'veg', '1 scoop (31 g)', 31, 120, 24.0, 3.0, 1.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Optimum Nutrition', 'Gold Standard', 'Double Rich Chocolate', 'Vanilla Ice Cream', 'Cookies and Cream', 'Extreme Milk Chocolate'] });
+  F('avvatar-whey', 'Avvatar Whey Protein (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 120, 25.6, 1.9, 1.4, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Avvatar', 'Belgian Chocolate', 'Rich Milk Chocolate', 'Mango'] });
+  F('gnc-whey', 'GNC Pro Performance 100% Whey (1 scoop)', PS, 'veg', '1 scoop (34 g)', 34, 130, 24.0, 4.0, 1.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['GNC', 'Chocolate Fudge', 'Double Rich Chocolate', 'Vanilla'] });
+  F('un-prostar-whey', 'Ultimate Nutrition Prostar Whey (1 scoop)', PS, 'veg', '1 scoop (30 g)', 30, 120, 25.0, 2.5, 1.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Ultimate Nutrition', 'Prostar'] });
+  F('myprotein-impact', 'MyProtein Impact Whey (1 scoop)', PS, 'veg', '1 scoop (25 g)', 25, 103, 21.0, 1.0, 1.9, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['MyProtein', 'Impact Whey', 'Chocolate Smooth', 'Salted Caramel'] });
+  F('bigmuscles-gold', 'Bigmuscles Premium Gold Whey (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 120, 24.0, 3.0, 1.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Bigmuscles', 'Premium Gold'] });
+  F('asitis-whey', 'AS-IT-IS Whey Protein — unflavored (1 scoop)', PS, 'veg', '1 scoop (30 g)', 30, 120, 24.0, 1.0, 1.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['AS-IT-IS', 'raw whey', 'unflavored whey'] });
+  F('fuelone-whey', 'Fuel One Whey (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 120, 24.0, 3.0, 1.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Fuel One'] });
+  F('nakpro-whey', 'Nakpro Whey Protein (1 scoop)', PS, 'veg', '1 scoop (33 g)', 33, 122, 24.0, 3.0, 1.6, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Nakpro'] });
+  F('hkvitals-whey', 'HK Vitals Whey Protein (1 scoop)', PS, 'veg', '1 scoop (30 g)', 30, 120, 24.0, 2.5, 1.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['HK Vitals', 'HealthKart'] });
+  // Whey isolate — branded
+  F('dymatize-iso100', 'Dymatize ISO100 Hydrolyzed (1 scoop)', PS, 'veg', '1 scoop (32 g)', 32, 110, 25.0, 1.0, 0.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Dymatize', 'ISO100', 'Gourmet Chocolate', 'Fudge Brownie', 'Birthday Cake'] });
+  F('isopure-zerocarb', 'Isopure Zero Carb (1 scoop)', PS, 'veg', '1 scoop (31 g)', 31, 100, 25.0, 0.0, 0.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Isopure', 'Zero Carb', 'Dutch Chocolate', 'Creamy Vanilla'] });
+  F('on-isolate', 'ON Gold Standard 100% Isolate (1 scoop)', PS, 'veg', '1 scoop (32 g)', 32, 110, 25.0, 1.0, 0.5, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Optimum Nutrition Isolate', 'Gold Standard Isolate'] });
+  // Casein / gainers / plant — branded
+  F('on-casein', 'ON Gold Standard 100% Casein (1 scoop)', PS, 'veg', '1 scoop (34 g)', 34, 120, 24.0, 3.0, 1.0, 0.0, { role: 'supplement', tags: ['dairy', 'gf'], aka: ['Optimum Nutrition Casein', 'Creamy Vanilla', 'Chocolate Supreme'] });
+  F('on-serious-mass', 'ON Serious Mass (2 scoops)', PS, 'veg', '2 scoops (334 g)', 334, 1250, 50.0, 252.0, 4.5, 3.0, { role: 'supplement', tags: ['dairy'], aka: ['Optimum Nutrition', 'Serious Mass', 'weight gainer'] });
+  F('mb-mass-gainer', 'MuscleBlaze Mass Gainer XXL (1 serving)', PS, 'veg', '1 serving (75 g)', 75, 340, 15.0, 65.0, 2.5, 1.0, { role: 'supplement', tags: ['dairy'], aka: ['MuscleBlaze Mass Gainer', 'weight gainer', 'XXL'] });
+  F('oziva-plant', 'OZiva Protein & Herbs — plant (1 scoop)', PS, 'vegan', '1 scoop (33 g)', 33, 120, 20.0, 4.0, 2.0, 1.0, { role: 'supplement', tags: ['gf'], aka: ['OZiva', 'plant protein', 'Chocolate', 'Coffee'] });
+  F('plix-plant', 'Plix Plant Protein (1 scoop)', PS, 'vegan', '1 scoop (30 g)', 30, 120, 24.0, 3.0, 2.0, 1.0, { role: 'supplement', tags: ['gf'], aka: ['Plix', 'Rich Chocolate', 'Coffee'] });
+  F('mb-vegan', 'MuscleBlaze Vegan Protein (1 scoop)', PS, 'vegan', '1 scoop (33 g)', 33, 120, 24.0, 3.0, 2.0, 1.0, { role: 'supplement', tags: ['gf'], aka: ['MuscleBlaze Vegan', 'pea protein'] });
+
+  /* ---------------- Pre-Workout & Aminos ----------------
+     Pre-workouts and amino/creatine powders are near-zero calorie
+     (caffeine, beta-alanine, citrulline, amino acids). Flavors are aliases. */
+  var PW = 'Pre-Workout & Aminos';
+  F('preworkout-generic', 'Pre-workout — generic (1 scoop)', PW, 'vegan', '1 scoop (10 g)', 10, 15, 0.0, 3.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['pre workout', 'preworkout', 'caffeine scoop', 'Fruit Punch', 'Blue Razz'] });
+  F('c4-original', 'Cellucor C4 Original (1 scoop)', PW, 'vegan', '1 scoop (6 g)', 6, 5, 0.0, 1.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['C4', 'Cellucor', 'Fruit Punch', 'Icy Blue Razz'] });
+  F('mb-preworkout', 'MuscleBlaze Pre Workout (1 scoop)', PW, 'vegan', '1 scoop (10 g)', 10, 12, 0.0, 2.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['MuscleBlaze PreWO', 'Pre Workout 300xt'] });
+  F('ghost-legend', 'GHOST Legend Pre-Workout (1 scoop)', PW, 'vegan', '1 scoop (12 g)', 12, 10, 0.0, 2.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['GHOST', 'Legend'] });
+  F('gnc-amp-preworkout', 'GNC AMP Pre-Workout (1 scoop)', PW, 'vegan', '1 scoop (13 g)', 13, 15, 0.0, 3.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['GNC AMP', 'Gaspari'] });
+  F('bcaa-generic', 'BCAA (1 serving)', PW, 'vegan', '1 serving (7 g)', 7, 5, 0.0, 0.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['branched chain amino acids', 'intra workout'] });
+  F('eaa-generic', 'EAA (1 serving)', PW, 'vegan', '1 serving (10 g)', 10, 8, 0.0, 1.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['essential amino acids'] });
+  F('creatine-mono', 'Creatine monohydrate (1 scoop, 5 g)', PW, 'vegan', '1 scoop (5 g)', 5, 0, 0.0, 0.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['creatine', 'MB Creatine', 'Creapure'] });
+  F('glutamine', 'L-Glutamine (1 scoop, 5 g)', PW, 'vegan', '1 scoop (5 g)', 5, 0, 0.0, 0.0, 0.0, 0.0, { role: 'supplement', tags: ['gf'], aka: ['glutamine'] });
+
+  /* ---------------- Fibre Supplements ---------------- */
+  var FS = 'Fibre Supplements';
+  F('isabgol', 'Isabgol / psyllium husk (1 tbsp)', FS, 'vegan', '1 tbsp (5 g)', 5, 15, 0.5, 4.0, 0.1, 4.0, { role: 'supplement', tags: ['gf'], aka: ['psyllium husk', 'Sat Isabgol', 'Telephone isabgol', 'ispaghula', 'ishabgul'] });
+  F('actifibre', 'Actifibre (1 sachet, PHGG)', FS, 'vegan', '1 sachet (5 g)', 5, 18, 0.0, 4.5, 0.0, 4.5, { role: 'supplement', tags: ['gf'], aka: ['Sanofi Actifibre', 'partially hydrolyzed guar gum', 'PHGG', 'Sunfiber'] });
+  F('metamucil', 'Metamucil — sugar-free (1 rounded tsp)', FS, 'vegan', '1 tsp (6 g)', 6, 20, 0.0, 5.0, 0.0, 3.0, { role: 'supplement', tags: ['gf'], aka: ['psyllium fibre', 'Metamucil'] });
+  F('daily-fibre', 'Daily Fibre supplement (1 serving)', FS, 'vegan', '1 serving (6 g)', 6, 20, 0.0, 5.0, 0.0, 5.0, { role: 'supplement', tags: ['gf'], aka: ['Wellbeing Daily Fibre', 'fibre supplement', 'HK Vitals Fibre'] });
+  F('inulin-fibre', 'Inulin / chicory fibre (1 scoop)', FS, 'vegan', '1 scoop (6 g)', 6, 12, 0.0, 5.0, 0.0, 5.0, { role: 'supplement', tags: ['gf'], aka: ['chicory root fibre', 'prebiotic fibre', 'inulin'] });
+  F('wheat-bran', 'Wheat bran (2 tbsp)', FS, 'vegan', '2 tbsp (15 g)', 15, 32, 2.3, 9.6, 0.7, 6.4, { role: 'supplement', aka: ['choker', 'bran', 'gehun ka choker'] });
+  F('oat-bran', 'Oat bran (2 tbsp)', FS, 'vegan', '2 tbsp (15 g)', 15, 37, 2.6, 9.9, 1.0, 2.4, { role: 'supplement', tags: ['gf'], aka: ['oat fibre'] });
 
   window.FOODS = FOODS;
 

@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <!-- Content-Security-Policy: all scripts are local files (no inline JS), so
+       script-src 'self' blocks any injected inline/on* handler; connect-src
+       allows only the optional AI-dietician call to Anthropic. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.anthropic.com; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#fcfcfb" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#1a1a19" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#1e5f40" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#17402a" media="(prefers-color-scheme: dark)">
   <meta name="description" content="Indian-first calorie tracking, diet plans and workout plans — IFCT 2017 / INDB grounded, with oil & cooking-style accuracy.">
   <title>Annapurna — Indian Calorie Tracker & Fitness Planner</title>
   <link rel="manifest" href="manifest.webmanifest">
@@ -26,6 +30,7 @@
   <nav class="tabs" id="tabs">
     <button data-view="dashboard" class="active">Dashboard</button>
     <button data-view="log">Log Food</button>
+    <button data-view="coach">Coach</button>
     <button data-view="dietplan">Diet Plan</button>
     <button data-view="workout">Workout</button>
     <button data-view="weight">Weight</button>
@@ -36,6 +41,7 @@
   <main>
     <!-- ================= Dashboard ================= -->
     <section class="view active" id="view-dashboard">
+      <p class="view-kicker" aria-hidden="true">Aaj ka hisaab — today at a glance</p>
       <div class="date-nav">
         <button class="btn secondary small" id="dash-prev" aria-label="Previous day">←</button>
         <input type="date" id="dash-date">
@@ -43,7 +49,47 @@
         <button class="btn small" id="dash-today">Today</button>
       </div>
 
-      <div class="stat-row" id="dash-stats"></div>
+      <!-- Energy-balance hero: calories in vs out at a glance -->
+      <div class="card hero-energy">
+        <div class="he-ring-wrap">
+          <div class="he-ring" id="dash-ring"></div>
+        </div>
+        <div class="he-body">
+          <div class="he-inout">
+            <div class="io io-in">
+              <span class="io-label">Eaten in</span>
+              <span class="io-val" id="he-eaten">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+            <span class="io-op">−</span>
+            <div class="io io-out">
+              <span class="io-label">Burned</span>
+              <span class="io-val" id="he-burned">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+            <span class="io-op">=</span>
+            <div class="io io-net">
+              <span class="io-label">Net</span>
+              <span class="io-val" id="he-net">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+          </div>
+          <div class="he-scale">
+            <div class="he-scale-track"><span id="he-scale-fill"></span></div>
+            <p class="he-scale-cap" id="he-scale-cap"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI / coach suggestions surfaced right on the dashboard -->
+      <div class="card dash-coach">
+        <div class="dc-head">
+          <h2>💡 Suggestions for you</h2>
+          <button class="btn small ai-spark" id="dash-ai-insight">✨ AI insight</button>
+        </div>
+        <div id="dash-coach-cards"></div>
+        <div id="dash-ai-out" class="ai-output hidden"></div>
+      </div>
 
       <div class="grid-2" style="margin-top:16px">
         <div class="card">
@@ -84,21 +130,96 @@
 
     <!-- ================= Log Food ================= -->
     <section class="view" id="view-log">
-      <div class="card">
-        <h2>Search the Indian food database</h2>
-        <div class="search-row">
-          <input type="text" id="log-search" placeholder="Search: roti, dal, dosa, biryani, chaat, badam…">
-          <select id="log-cat"></select>
-          <select id="log-diet-filter">
-            <option value="all">All diets</option>
-            <option value="veg">Vegetarian</option>
-            <option value="vegan">Vegan</option>
-            <option value="egg">Eggetarian</option>
-            <option value="jain">Jain-friendly</option>
-          </select>
+      <div class="log-grid">
+        <div class="card">
+          <h2>Search the Indian food database</h2>
+          <div class="search-row">
+            <input type="text" id="log-search" placeholder="Search: roti, dal, dosa, biryani, chaat, badam…">
+            <select id="log-cat"></select>
+            <select id="log-diet-filter">
+              <option value="all">All diets</option>
+              <option value="veg">Vegetarian</option>
+              <option value="vegan">Vegan</option>
+              <option value="egg">Eggetarian</option>
+              <option value="jain">Jain-friendly</option>
+            </select>
+          </div>
+          <p class="hint" id="log-count"></p>
+          <div class="food-list" id="log-results"></div>
         </div>
-        <p class="hint" id="log-count"></p>
-        <div class="food-list" id="log-results"></div>
+        <div class="card log-panel" id="log-today-card">
+          <h2 id="log-panel-title">Today so far</h2>
+          <div id="log-panel-summary"></div>
+          <div id="log-panel-meals"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Coach ================= -->
+    <section class="view" id="view-coach">
+      <div class="card">
+        <h2>🥗 Your dietician's take on today</h2>
+        <p class="hint" style="margin-bottom:10px">
+          Adapts to every entry you log — pacing, protein, indulgence
+          make-up, weight trend. Free and on-device.
+        </p>
+        <div id="coach-cards"></div>
+      </div>
+      <div class="card">
+        <h2>🤖 AI Dietician <span class="hint" style="font-weight:400">(optional — uses your own Anthropic API key)</span></h2>
+        <div id="ai-locked">
+          <p class="hint" style="margin-bottom:10px">
+            The AI dietician runs on <strong>your own</strong> Anthropic API
+            key — there's no shared account. Connect a key to get a
+            conversational dietician that reads your actual logs. Cost-routed
+            so it stays cheap: daily check-ins run on <strong>Claude Haiku</strong>
+            (fractions of a paisa each) and weekly reviews on
+            <strong>Claude Sonnet</strong>. Your key is stored only in this
+            browser and sent only to api.anthropic.com — never to us, and
+            never to anyone else who opens this app (they connect their own).
+          </p>
+          <p class="hint" style="margin-bottom:10px">
+            ⚠️ Note: on a shared hosting origin (e.g. a personal
+            <code>github.io</code> account), other pages you host under the
+            same account could read this browser's stored key. Prefer a
+            dedicated key with a low spend limit, untick “Remember” on a shared
+            computer, and disconnect it below when you're done.
+          </p>
+          <div class="form-grid">
+            <label class="field" style="grid-column:1/-1"><span>Anthropic API key</span>
+              <input type="password" id="ai-key-input" placeholder="sk-ant-…" autocomplete="off">
+            </label>
+          </div>
+          <div class="form-actions">
+            <button class="btn" id="ai-key-save">Connect</button>
+            <label style="font-size:0.82rem; color:var(--ink-2); display:flex; align-items:center; gap:6px">
+              <input type="checkbox" id="ai-key-remember" style="width:auto" checked>
+              Remember my key on this device
+            </label>
+          </div>
+          <p class="hint" style="margin-top:8px">
+            Ticked: kept on this device until you disconnect. Unticked:
+            session-only — cleared when you close the tab (best on a shared or
+            public computer).
+          </p>
+        </div>
+        <div id="ai-unlocked" class="hidden">
+          <div class="form-actions" style="margin-bottom:12px">
+            <button class="btn" id="ai-checkin">☀️ Daily check-in <span class="model-chip">Haiku</span></button>
+            <button class="btn secondary" id="ai-weekly">📊 Weekly deep review <span class="model-chip">Sonnet</span></button>
+            <button class="btn danger-ghost small" id="ai-key-clear">Disconnect key</button>
+          </div>
+          <label class="field"><span>Ask anything (e.g. “I’m eating out tonight — what should I order?”)</span>
+            <input type="text" id="ai-question" placeholder="Ask your dietician…">
+          </label>
+          <div class="form-actions">
+            <button class="btn" id="ai-ask">Ask <span class="model-chip">Haiku</span></button>
+            <label style="font-size:0.82rem; color:var(--ink-2); display:flex; align-items:center; gap:6px">
+              <input type="checkbox" id="ai-deep" style="width:auto"> Think deeper (Sonnet)
+            </label>
+          </div>
+          <div id="ai-output" class="ai-output hidden"></div>
+        </div>
       </div>
     </section>
 
@@ -123,6 +244,81 @@
 
     <!-- ================= Workout ================= -->
     <section class="view" id="view-workout">
+      <p class="view-kicker" aria-hidden="true">Aaj ka pasina — log your training</p>
+
+      <!-- Workout tracker: manual, live camera, or photo/video upload -->
+      <div class="card">
+        <h2>Log a workout</h2>
+        <div class="seg" id="wo-mode" role="tablist">
+          <button type="button" data-mode="manual" class="active">✍️ Manual</button>
+          <button type="button" data-mode="camera">📷 Camera</button>
+          <button type="button" data-mode="upload">🖼️ Photo / Video</button>
+        </div>
+
+        <!-- detection surface (camera + upload share it) -->
+        <div id="wo-detect" class="wo-detect hidden">
+          <p class="hint wo-detect-note">
+            📸 A frame is sent to <strong>Anthropic (Claude Haiku vision)</strong>
+            using <strong>your own</strong> API key to identify the exercise —
+            then you enter the sets, reps and weight. There's no shared key:
+            anyone using this app connects their own, and nothing is stored
+            anywhere but this browser. Connect a key in the
+            <a href="#" id="wo-goto-coach">Coach tab</a>.
+          </p>
+          <div id="wo-camera-panel" class="hidden">
+            <div class="wo-video-wrap">
+              <video id="wo-video" playsinline muted></video>
+            </div>
+            <div class="form-actions">
+              <button class="btn small" id="wo-cam-start">Start camera</button>
+              <button class="btn small" id="wo-cam-capture" disabled>📸 Capture &amp; identify</button>
+              <button class="btn secondary small" id="wo-cam-stop" disabled>Stop</button>
+            </div>
+          </div>
+          <div id="wo-upload-panel" class="hidden">
+            <label class="field"><span>Upload a photo or a short video of the exercise</span>
+              <input type="file" id="wo-file" accept="image/*,video/*">
+            </label>
+            <button class="btn small" id="wo-file-detect" disabled>🔎 Identify exercise</button>
+          </div>
+          <div id="wo-detect-status" class="wo-detect-status hidden"></div>
+        </div>
+
+        <div class="form-grid" style="margin-top:6px">
+          <label class="field"><span>Exercise</span>
+            <select id="wo-ex"></select>
+          </label>
+        </div>
+        <!-- strength inputs -->
+        <div id="wo-strength" class="form-grid">
+          <label class="field"><span>Sets</span>
+            <input type="number" id="wo-sets" min="1" max="20" step="1" value="3">
+          </label>
+          <label class="field"><span>Reps / set</span>
+            <input type="number" id="wo-reps" min="1" max="100" step="1" value="10">
+          </label>
+          <label class="field"><span>Weight (kg, 0 = bodyweight)</span>
+            <input type="number" id="wo-weight" min="0" max="500" step="0.5" value="20">
+          </label>
+        </div>
+        <!-- cardio inputs -->
+        <div id="wo-cardio" class="form-grid hidden">
+          <label class="field"><span>Minutes</span>
+            <input type="number" id="wo-minutes" min="1" max="300" step="1" value="30">
+          </label>
+        </div>
+        <div class="live-kcal" id="wo-kcal"></div>
+        <div class="live-macros" id="wo-kcal-detail"></div>
+        <button class="btn" id="wo-log">Log workout</button>
+      </div>
+
+      <!-- today's logged training -->
+      <div class="card">
+        <h2 id="wo-today-title">Today's workout</h2>
+        <div id="wo-today"></div>
+      </div>
+
+      <!-- weekly plan generator (unchanged) -->
       <div class="card">
         <h2>Weekly workout plan</h2>
         <div class="form-grid">
@@ -151,6 +347,7 @@
         <button class="btn" id="wo-generate">Generate workout plan</button>
         <div id="wo-plan" style="margin-top:16px"></div>
       </div>
+      <canvas id="wo-canvas" class="hidden" aria-hidden="true"></canvas>
     </section>
 
     <!-- ================= Weight ================= -->
@@ -208,6 +405,7 @@
           <label class="field"><span>Current weight (kg)</span><input type="number" id="pf-weight" min="30" max="250" step="0.1" value="70"></label>
           <label class="field"><span>Goal weight (kg)</span><input type="number" id="pf-goal" min="30" max="250" step="0.1" value="65"></label>
           <label class="field"><span>Activity level</span><select id="pf-activity"></select></label>
+          <label class="field"><span>Goal mode</span><select id="pf-goalmode"></select></label>
           <label class="field"><span>Pace</span><select id="pf-pace"></select></label>
           <label class="field"><span>Diet preference</span><select id="pf-diet"></select></label>
         </div>
@@ -235,8 +433,17 @@
       <h2 id="fm-name"></h2>
       <p class="food-serving" id="fm-serving"></p>
       <div class="form-grid">
-        <label class="field"><span>Servings</span>
-          <input type="number" id="fm-qty" min="0.5" max="10" step="0.5" value="1">
+        <label class="field"><span>Amount by</span>
+          <select id="fm-mode">
+            <option value="servings">Servings</option>
+            <option value="grams">Grams</option>
+          </select>
+        </label>
+        <label class="field" id="fm-qty-field"><span>Servings</span>
+          <input type="number" id="fm-qty" min="0.25" max="10" step="0.25" value="1">
+        </label>
+        <label class="field hidden" id="fm-grams-field"><span>Grams</span>
+          <input type="number" id="fm-grams" min="5" max="2000" step="5" value="100">
         </label>
         <label class="field"><span>Meal</span>
           <select id="fm-meal">
@@ -290,6 +497,8 @@
   <script src="js/nutrition.js"></script>
   <script src="js/store.js"></script>
   <script src="js/planner.js"></script>
+  <script src="js/coach.js"></script>
+  <script src="js/ai.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/app.js"></script>
 </body>

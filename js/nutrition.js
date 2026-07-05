@@ -20,6 +20,17 @@
     { id: 'aggressive', name: 'Aggressive — 0.75 kg/week', kgPerWeek: 0.75 }
   ];
 
+  /* Goal modes. 'auto' infers lose/gain/maintain from current vs goal
+     weight; 'recomp' (build muscle + lose fat together) runs a mild deficit
+     with high protein and strength-first training. */
+  var GOAL_MODES = [
+    { id: 'auto', name: 'Auto — from my goal weight' },
+    { id: 'lose', name: 'Lose fat' },
+    { id: 'gain', name: 'Build muscle (gain)' },
+    { id: 'recomp', name: 'Build muscle + lose fat (recomposition)' },
+    { id: 'maintain', name: 'Maintain' }
+  ];
+
   var DIET_PREFS = [
     { id: 'veg', name: 'Vegetarian' },
     { id: 'vegan', name: 'Vegan' },
@@ -46,6 +57,7 @@
   }
 
   function goalOf(profile) {
+    if (profile.goalMode && profile.goalMode !== 'auto') return profile.goalMode;
     var diff = profile.goalWeightKg - profile.weightKg;
     if (diff < -0.5) return 'lose';
     if (diff > 0.5) return 'gain';
@@ -63,12 +75,21 @@
     var t = tdee(profile);
     var goal = goalOf(profile);
     var delta = paceKg(profile) * 7700 / 7;
+    var floor = profile.sex === 'male' ? 1500 : 1200;
+    // For a deficit goal, never return a budget above maintenance — for a
+    // very small/sedentary person the safety floor can sit above TDEE, and
+    // prescribing a surplus under a "lose fat" label is simply wrong. Cap at
+    // TDEE so the worst case is maintenance, not a surplus.
     if (goal === 'lose') {
       delta = Math.min(delta, t * 0.25);
-      var floor = profile.sex === 'male' ? 1500 : 1200;
-      return round(Math.max(t - delta, floor));
+      return round(Math.min(Math.max(t - delta, floor), t));
     }
     if (goal === 'gain') return round(t + Math.min(delta, 500));
+    if (goal === 'recomp') {
+      // mild ~12% deficit: enough to lose fat while high protein +
+      // strength training builds muscle
+      return round(Math.min(Math.max(t * 0.88, floor), t));
+    }
     return t;
   }
 
@@ -79,10 +100,16 @@
     var goal = goalOf(profile);
     // plant-based targets are set slightly lower — achievable with dals,
     // paneer/tofu, soya and dairy rather than aspirational
+    // Plant targets are set lower than omnivore: a high-protein day on a
+    // deficit is genuinely hard on Indian veg food, and an unreachable
+    // target just makes every generated plan look like a failure. These
+    // levels are still high enough to protect/build lean mass and are
+    // attainable with paneer, tofu, soya, dal, besan and dairy.
     var plant = profile.dietPref === 'veg' || profile.dietPref === 'vegan' || profile.dietPref === 'jain';
-    var proteinPerKg = goal === 'lose' ? (plant ? 1.4 : 1.6)
-      : goal === 'gain' ? (plant ? 1.6 : 1.8)
-        : (plant ? 1.1 : 1.2);
+    var proteinPerKg = goal === 'lose' ? (plant ? 1.2 : 1.6)
+      : goal === 'gain' ? (plant ? 1.4 : 1.8)
+        : goal === 'recomp' ? (plant ? 1.4 : 2.0) // protein is the recomp lever
+          : (plant ? 1.1 : 1.2);
     var refWeight = goal === 'lose' ? profile.goalWeightKg : profile.weightKg;
     var protein = Math.min(refWeight * proteinPerKg, kcal * 0.35 / 4);
     var fat = kcal * 0.27 / 9;
@@ -163,6 +190,28 @@
     return round(met * 3.5 * weightKg / 200 * minutes);
   }
 
+  /* Strength burn from sets × reps × weight.
+     Duration is derived, not entered: ~3.5 s of work per rep, plus rest
+     between sets. Working sets burn at the move's MET; the rest between them
+     burns at a near-resting ~1.6 MET (standing/recovering), so a low-rep
+     heavy day and a high-rep pump day don't get the same inflated number.
+     External load raises effort slightly — a small bump scaled to weight
+     relative to a light dumbbell — capped so it can't run away. Returns
+     { kcal, minutes }. */
+  function strengthKcal(met, weightKg, sets, reps, loadKg, restSec) {
+    sets = Math.max(1, Math.round(sets || 1));
+    reps = Math.max(1, Math.round(reps || 1));
+    restSec = restSec == null ? 75 : restSec;
+    var SEC_PER_REP = 3.5;
+    var activeMin = sets * reps * SEC_PER_REP / 60;
+    var restMin = Math.max(sets - 1, 0) * restSec / 60;
+    // load factor: +0..25% as external load climbs (0 → bodyweight, ~40 kg+ → full)
+    var loadFactor = 1 + Math.min(Math.max(loadKg || 0, 0) / 40, 1) * 0.25;
+    var work = met * 3.5 * weightKg / 200 * activeMin * loadFactor;
+    var rest = 1.6 * 3.5 * weightKg / 200 * restMin;
+    return { kcal: round(work + rest), minutes: Math.round(activeMin + restMin) };
+  }
+
   /* Diet-preference filter. 'jain' additionally excludes onion/garlic and
      root vegetables via tags. */
   function dietAllows(pref, food) {
@@ -180,6 +229,7 @@
   window.Nutrition = {
     ACTIVITY: ACTIVITY,
     PACES: PACES,
+    GOAL_MODES: GOAL_MODES,
     DIET_PREFS: DIET_PREFS,
     bmr: bmr,
     tdee: tdee,
@@ -191,6 +241,7 @@
     bmiClass: bmiClass,
     computeEntry: computeEntry,
     exerciseKcal: exerciseKcal,
+    strengthKcal: strengthKcal,
     dietAllows: dietAllows
   };
 })();

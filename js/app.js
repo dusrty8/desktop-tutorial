@@ -32,8 +32,35 @@
     toastTimer = setTimeout(function () { t.classList.remove('show'); }, 2200);
   }
   function dietChip(diet) {
-    var label = { vegan: 'VEGAN', veg: 'VEG', egg: 'EGG', nonveg: 'NON-VEG' }[diet] || diet;
+    var label = { vegan: 'VEGAN', veg: 'VEG', egg: 'EGG', nonveg: 'NON-VEG' }[diet] || esc(diet);
     return '<span class="chip ' + esc(diet) + '">' + label + '</span>';
+  }
+  function clampInt(v, lo, hi, def) { var n = parseInt(v, 10); if (!isFinite(n)) n = def; return Math.min(Math.max(n, lo), hi); }
+  function clampNum(v, lo, hi, def) { var n = parseFloat(v); if (!isFinite(n)) n = def; return Math.min(Math.max(n, lo), hi); }
+
+  // Coach-card markup, shared by the Coach tab and the dashboard strip.
+  // c.icon is an app-authored emoji (trusted); text fields are escaped.
+  function coachCardHtml(c) {
+    return '<div class="coach-card ' + esc(c.tone) + '"><div class="cc-icon">' + c.icon + '</div>' +
+      '<div class="cc-text"><div class="cc-title">' + esc(c.title) + '</div>' +
+      '<div class="cc-body">' + esc(c.body) + '</div></div></div>';
+  }
+
+  // An exercise entry's display name and detail, used by the dashboard list
+  // and the workout tracker. AI-detected custom moves have no exId, so fall
+  // back to the stored (sanitized) name.
+  function exName(x) {
+    var ex = P.exById(x.exId);
+    return ex ? ex.name : (x.name || x.exId || 'Exercise');
+  }
+  function exDetailText(x) {
+    if (x.sets && x.reps) {
+      var s = x.sets + ' × ' + x.reps;
+      if (x.weightKg) s += ' @ ' + x.weightKg + ' kg';
+      else s += ' (bodyweight)';
+      return s + ' · ' + (x.minutes || 0) + ' min';
+    }
+    return (x.minutes || 0) + ' min';
   }
 
   /* ---------------- tabs ---------------- */
@@ -44,11 +71,14 @@
       b.classList.toggle('active', b.dataset.view === name);
     });
     $('view-' + name).classList.add('active');
+    if (name !== 'workout') stopCamera();
     if (name === 'dashboard') renderDashboard();
     if (name === 'weight') renderWeight();
     if (name === 'database') renderDatabase();
     if (name === 'dietplan') renderDietTargets();
-    if (name === 'log') renderFoodSearch();
+    if (name === 'log') { renderFoodSearch(); renderLogPanel(); }
+    if (name === 'coach') renderCoach();
+    if (name === 'workout') renderWorkoutView();
   }
   $('tabs').addEventListener('click', function (e) {
     if (e.target.dataset && e.target.dataset.view) switchView(e.target.dataset.view);
@@ -63,6 +93,7 @@
 
   function initProfileForm() {
     fillSelect($('pf-activity'), N.ACTIVITY, 'id', 'name');
+    fillSelect($('pf-goalmode'), N.GOAL_MODES, 'id', 'name');
     fillSelect($('pf-pace'), N.PACES, 'id', 'name');
     fillSelect($('pf-diet'), N.DIET_PREFS, 'id', 'name');
     var p = S.profile();
@@ -74,6 +105,7 @@
       $('pf-weight').value = p.weightKg;
       $('pf-goal').value = p.goalWeightKg;
       $('pf-activity').value = p.activity;
+      $('pf-goalmode').value = p.goalMode || 'auto';
       $('pf-pace').value = p.pace;
       $('pf-diet').value = p.dietPref;
       renderProfileSummary(p);
@@ -94,6 +126,7 @@
       sex: $('pf-sex').value,
       age: age, heightCm: h, weightKg: w, goalWeightKg: g,
       activity: $('pf-activity').value,
+      goalMode: $('pf-goalmode').value,
       pace: $('pf-pace').value,
       dietPref: $('pf-diet').value
     };
@@ -104,7 +137,8 @@
     var goal = N.goalOf(p);
     var goalText = goal === 'lose' ? 'Lose ' + (Math.round((p.weightKg - p.goalWeightKg) * 10) / 10) + ' kg'
       : goal === 'gain' ? 'Gain ' + (Math.round((p.goalWeightKg - p.weightKg) * 10) / 10) + ' kg'
-        : 'Maintain weight';
+        : goal === 'recomp' ? 'Recomposition — build muscle & lose fat (mild deficit, high protein)'
+          : 'Maintain weight';
     var b = N.bmi(p);
     $('pf-summary').innerHTML =
       '<div class="stat-row">' +
@@ -152,19 +186,70 @@
     return { totals: totals, perMeal: perMeal, burned: burned, water: d.water, exercises: d.exercises };
   }
 
+  // Energy-balance hero: calorie ring (remaining in center) + in/out numbers
+  // + a budget scale bar. Uses net = eaten − exercise burned against budget.
+  function renderEnergyHero(p, budget, eaten, burned, net, remaining) {
+    $('he-eaten').textContent = Math.round(eaten);
+    $('he-burned').textContent = Math.round(burned);
+    $('he-net').textContent = Math.round(net);
+    var over = net > budget;
+    var frac = budget > 0 ? net / budget : 0;
+    C.ring($('dash-ring'), Math.max(frac, 0),
+      over ? String(Math.round(net - budget)) : String(Math.max(remaining, 0)),
+      over ? 'over budget' : 'kcal left', over);
+    var fill = $('he-scale-fill');
+    fill.style.width = Math.min(Math.max(frac, 0) * 100, 100) + '%';
+    fill.classList.toggle('over', over);
+    var cap;
+    if (!p) {
+      cap = 'Set up your <strong>profile</strong> to get a calorie budget tailored to your goal.';
+    } else if (over) {
+      cap = 'Over by <strong>' + Math.round(net - budget) + ' kcal</strong> — a brisk walk or a lighter dinner rebalances it.';
+    } else {
+      cap = 'You have <strong>' + Math.max(remaining, 0) + ' kcal</strong> left of your <strong>' + budget + '</strong> budget today.';
+    }
+    if (p && burned > 0) cap += ' Exercise bought back <strong>' + Math.round(burned) + ' kcal</strong>.';
+    $('he-scale-cap').innerHTML = cap; // numbers only — safe
+  }
+
+  function renderDashboardCoach() {
+    var cards = window.Coach.generateAdvice(currentDate).slice(0, 3);
+    $('dash-coach-cards').innerHTML = cards.map(coachCardHtml).join('');
+  }
+
+  $('dash-ai-insight').addEventListener('click', function () {
+    var out = $('dash-ai-out');
+    var btn = this;
+    if (!window.AI.hasKey()) {
+      toast('Connect your Anthropic key in the Coach tab for AI insights');
+      switchView('coach');
+      return;
+    }
+    out.classList.remove('hidden');
+    out.textContent = 'Thinking through your day (Claude Haiku)…';
+    btn.disabled = true;
+    window.AI.ask(window.AI.PROMPTS.checkin, 'quick').then(function (text) {
+      out.textContent = text; btn.disabled = false;
+    }, function (err) {
+      out.textContent = err && err.message === 'no-profile'
+        ? 'Set up your profile first — the dietician needs your goals and logs.'
+        : 'Could not reach the AI dietician: ' + (err && err.message ? err.message : 'unknown error');
+      btn.disabled = false;
+    });
+  });
+
   function renderDashboard() {
     $('dash-date').value = currentDate;
     var p = S.profile();
     var dn = dayNutrition(currentDate);
     var t = p ? N.macroTargets(p) : null;
     var budget = t ? t.kcal : 2000;
-    var remaining = Math.round(budget - dn.totals.kcal + dn.burned);
-
-    $('dash-stats').innerHTML =
-      '<div class="stat"><div class="value">' + budget + '</div><div class="label">Budget (kcal)' + (p ? '' : ' — set up your profile') + '</div></div>' +
-      '<div class="stat"><div class="value">' + Math.round(dn.totals.kcal) + '</div><div class="label">Eaten (kcal)</div></div>' +
-      '<div class="stat"><div class="value">' + dn.burned + '</div><div class="label">Burned — exercise (kcal)</div></div>' +
-      '<div class="stat"><div class="value' + (remaining < 0 ? ' over' : '') + '">' + remaining + '</div><div class="label">' + (remaining < 0 ? 'Over budget (kcal)' : 'Remaining (kcal)') + '</div></div>';
+    var eaten = dn.totals.kcal;
+    var burned = dn.burned;
+    var net = eaten - burned;
+    var remaining = Math.round(budget - net);
+    renderEnergyHero(p, budget, eaten, burned, net, remaining);
+    renderDashboardCoach();
 
     // macro donut + bars
     var segs = [
@@ -181,7 +266,7 @@
     [['Protein', 'protein', dn.totals.protein, t ? t.protein : 0],
      ['Carbs', 'carbs', dn.totals.carbs, t ? t.carbs : 0],
      ['Fat', 'fat', dn.totals.fat, t ? t.fat : 0],
-     ['Fibre', 'protein', dn.totals.fiber, t ? t.fiber : 0]].forEach(function (row) {
+     ['Fibre', 'fiber', dn.totals.fiber, t ? t.fiber : 0]].forEach(function (row) {
       var pct = row[3] ? Math.min(row[2] / row[3] * 100, 100) : 0;
       var over = row[3] && row[2] > row[3] * 1.15;
       bars += '<div class="bar-row">' + row[0] +
@@ -202,10 +287,9 @@
     // exercises
     $('dash-exercises').innerHTML = dn.exercises.length
       ? dn.exercises.map(function (x, i) {
-        var ex = P.exById(x.exId);
-        return '<div class="entry-row"><span class="entry-name">' + esc(ex ? ex.name : x.exId) +
-          ' <span class="entry-detail">' + x.minutes + ' min</span></span>' +
-          '<span class="entry-kcal">−' + x.kcal + ' kcal</span>' +
+        return '<div class="entry-row"><span class="entry-name">' + esc(exName(x)) +
+          ' <span class="entry-detail">' + esc(exDetailText(x)) + '</span></span>' +
+          '<span class="entry-kcal">−' + esc(x.kcal) + ' kcal</span>' +
           '<button class="icon-btn" data-ex-del="' + i + '" aria-label="Delete exercise">✕</button></div>';
       }).join('')
       : '<p class="hint">Nothing logged yet.</p>';
@@ -225,8 +309,9 @@
             extra.push(it.entry.style === 'light' ? 'light oil' : 'restaurant-style');
           }
           if (it.entry.extraOilTsp) extra.push('+' + it.entry.extraOilTsp + ' tsp oil');
+          var qtyText = it.entry.inputGrams ? esc(it.entry.inputGrams) + ' g' : '× ' + esc(it.entry.qty);
           mealsHtml += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name) +
-            ' <span class="entry-detail">× ' + it.entry.qty + (extra.length ? ' · ' + esc(extra.join(', ')) : '') + '</span></span>' +
+            ' <span class="entry-detail">' + qtyText + (extra.length ? ' · ' + esc(extra.join(', ')) : '') + '</span></span>' +
             '<span class="entry-kcal">' + it.computed.kcal + ' kcal</span>' +
             '<button class="icon-btn" data-meal="' + m + '" data-del="' + it.index + '" aria-label="Delete entry">✕</button></div>';
         });
@@ -265,6 +350,7 @@
   function initExerciseSelect() {
     var groups = {};
     window.EXERCISES.forEach(function (x) {
+      if (x.strength) return; // strength is logged by sets/reps in the Workout tab
       (groups[x.cat] = groups[x.cat] || []).push(x);
     });
     $('ex-select').innerHTML = Object.keys(groups).map(function (cat) {
@@ -345,6 +431,29 @@
     $('fm-oil-type').value = 'sunflower';
   }
 
+  // Clamp helpers — the modal inputs declare min/max in HTML but the browser
+  // doesn't enforce them on typed values, so a user can type -5 or 99999.
+  // A negative servings/oil value would log negative calories and corrupt
+  // every downstream total, so clamp to sane positive ranges here.
+  function clampGrams(g) { return Math.min(Math.max(g, 1), 5000); }
+  function clampServings(q) {
+    if (!isFinite(q) || q <= 0) return 1;
+    return Math.min(q, 50);
+  }
+  function currentModalQty() {
+    if ($('fm-mode').value === 'grams') {
+      var g = clampGrams(parseFloat($('fm-grams').value) || modalFood.grams);
+      return Math.max(Math.round(g / modalFood.grams * 100) / 100, 0.01);
+    }
+    return clampServings(parseFloat($('fm-qty').value));
+  }
+
+  function syncModalMode() {
+    var grams = $('fm-mode').value === 'grams';
+    $('fm-qty-field').classList.toggle('hidden', grams);
+    $('fm-grams-field').classList.toggle('hidden', !grams);
+  }
+
   function openFoodModal(foodId) {
     modalFood = P.foodById(foodId);
     if (!modalFood) return;
@@ -352,9 +461,17 @@
     $('fm-serving').textContent = 'Serving: ' + modalFood.unit + ' (' + modalFood.grams + ' g) · ' +
       modalFood.kcal + ' kcal standard';
     $('fm-qty').value = 1;
+    $('fm-mode').value = 'servings';
+    $('fm-grams').value = modalFood.grams;
+    syncModalMode();
     $('fm-style').value = 'standard';
     $('fm-oil-tsp').value = 0;
     $('fm-oil-section').classList.toggle('hidden', !modalFood.oil && modalFood.role !== 'ingredient');
+    // Cooking-style multiplier only affects oil-sensitive cooked dishes; hide
+    // it for raw ingredients (where it's a dead control) but keep the
+    // extra-oil field, which does apply.
+    var styleField = $('fm-style').closest('.field');
+    if (styleField) styleField.classList.toggle('hidden', !modalFood.oil);
     // suggest the meal by time of day
     var h = new Date().getHours();
     $('fm-meal').value = h < 11 ? 'breakfast' : h < 15 ? 'lunch' : h < 19 ? 'snacks' : 'dinner';
@@ -364,38 +481,149 @@
 
   function updateModalKcal() {
     if (!modalFood) return;
-    var qty = parseFloat($('fm-qty').value) || 1;
-    var e = N.computeEntry(modalFood, qty, $('fm-style').value,
+    var e = N.computeEntry(modalFood, currentModalQty(), $('fm-style').value,
       parseFloat($('fm-oil-tsp').value) || 0, $('fm-oil-type').value);
     $('fm-kcal').textContent = e.kcal + ' kcal';
     $('fm-macros').textContent = 'P ' + e.protein + ' g · C ' + e.carbs + ' g · F ' + e.fat + ' g · fibre ' + e.fiber + ' g · ' + e.grams + ' g';
   }
-  ['fm-qty', 'fm-style', 'fm-oil-tsp', 'fm-oil-type'].forEach(function (id) {
+  ['fm-qty', 'fm-grams', 'fm-style', 'fm-oil-tsp', 'fm-oil-type'].forEach(function (id) {
     $(id).addEventListener('input', updateModalKcal);
     $(id).addEventListener('change', updateModalKcal);
   });
+  $('fm-mode').addEventListener('change', function () { syncModalMode(); updateModalKcal(); });
   $('fm-cancel').addEventListener('click', function () { $('food-modal-backdrop').classList.add('hidden'); });
   $('food-modal-backdrop').addEventListener('click', function (e) {
     if (e.target === this) this.classList.add('hidden');
   });
   $('fm-add').addEventListener('click', function () {
     if (!modalFood) return;
+    var gramsMode = $('fm-mode').value === 'grams';
+    var oilTsp = parseFloat($('fm-oil-tsp').value);
     var entry = {
       foodId: modalFood.id,
-      qty: parseFloat($('fm-qty').value) || 1,
+      qty: currentModalQty(),
+      inputGrams: gramsMode ? clampGrams(parseFloat($('fm-grams').value) || modalFood.grams) : null,
       style: $('fm-style').value,
-      extraOilTsp: parseFloat($('fm-oil-tsp').value) || 0,
+      extraOilTsp: Math.min(Math.max(isFinite(oilTsp) ? oilTsp : 0, 0), 6),
       oilId: $('fm-oil-type').value
     };
     S.addFood(currentDate, $('fm-meal').value, entry);
     $('food-modal-backdrop').classList.add('hidden');
     toast('Added ' + modalFood.name + ' to ' + MEAL_NAMES[$('fm-meal').value]);
     renderDashboard();
+    renderLogPanel();
+  });
+
+  /* ---------------- log panel (today so far) ---------------- */
+  function renderLogPanel() {
+    var p = S.profile();
+    var dn = dayNutrition(currentDate);
+    var t = p ? N.macroTargets(p) : null;
+    $('log-panel-title').textContent = currentDate === todayStr() ? 'Today so far' : currentDate + ' so far';
+
+    var remaining = t ? Math.round(t.kcal - dn.totals.kcal + dn.burned) : null;
+    var summary = '<div class="lp-kcal"><strong>' + Math.round(dn.totals.kcal) + '</strong> kcal eaten';
+    if (t) {
+      summary += remaining < 0
+        ? ' · <span class="lp-over">' + Math.abs(remaining) + ' over budget</span>'
+        : ' · <span class="lp-left">' + remaining + ' left</span>';
+    }
+    summary += '</div>';
+    if (t) {
+      [['Protein', 'protein', dn.totals.protein, t.protein],
+       ['Carbs', 'carbs', dn.totals.carbs, t.carbs],
+       ['Fat', 'fat', dn.totals.fat, t.fat]].forEach(function (row) {
+        var pct = Math.min(row[2] / row[3] * 100, 100);
+        summary += '<div class="bar-row">' + row[0] +
+          '<span class="bar-nums">' + Math.round(row[2]) + ' / ' + row[3] + ' g</span>' +
+          '<div class="bar ' + row[1] + '"><span style="width:' + pct + '%"></span></div></div>';
+      });
+    }
+    $('log-panel-summary').innerHTML = summary;
+
+    var html = '';
+    Object.keys(MEAL_NAMES).forEach(function (m) {
+      var pm = dn.perMeal[m];
+      if (!pm.items.length) return;
+      html += '<div class="lp-meal"><div class="pm-title">' + MEAL_NAMES[m] +
+        ' <span class="bar-nums">' + Math.round(pm.kcal) + ' kcal</span></div>';
+      pm.items.forEach(function (it) {
+        var qtyText = it.entry.inputGrams ? esc(it.entry.inputGrams) + ' g' : '× ' + esc(it.entry.qty);
+        html += '<div class="entry-row"><span class="entry-name">' + esc(it.food.name.split(' (')[0]) +
+          ' <span class="entry-detail">' + qtyText + '</span></span>' +
+          '<span class="entry-kcal">' + it.computed.kcal + '</span>' +
+          '<button class="icon-btn" data-meal="' + m + '" data-del="' + it.index + '" aria-label="Remove">✕</button></div>';
+      });
+      html += '</div>';
+    });
+    $('log-panel-meals').innerHTML = html || '<p class="hint">Nothing logged yet — everything you add shows up here instantly.</p>';
+  }
+  $('log-panel-meals').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-del]');
+    if (!b) return;
+    S.removeFood(currentDate, b.dataset.meal, parseInt(b.dataset.del, 10));
+    renderLogPanel();
+    renderDashboard();
+  });
+
+  /* ---------------- coach & AI dietician ---------------- */
+  function renderCoach() {
+    var cards = window.Coach.generateAdvice(currentDate);
+    $('coach-cards').innerHTML = cards.map(coachCardHtml).join('');
+    var has = window.AI.hasKey();
+    $('ai-locked').classList.toggle('hidden', has);
+    $('ai-unlocked').classList.toggle('hidden', !has);
+  }
+
+  function aiButtonsDisabled(state) {
+    ['ai-checkin', 'ai-weekly', 'ai-ask'].forEach(function (id) { $(id).disabled = state; });
+  }
+
+  function aiRun(promptText, tier) {
+    var out = $('ai-output');
+    out.classList.remove('hidden');
+    out.textContent = tier === 'deep'
+      ? 'Reviewing your last two weeks (Claude Sonnet)…'
+      : 'Checking your day (Claude Haiku)…';
+    aiButtonsDisabled(true);
+    window.AI.ask(promptText, tier).then(function (text) {
+      out.textContent = text; // textContent keeps any model output inert
+      aiButtonsDisabled(false);
+    }, function (err) {
+      out.textContent = err && err.message === 'no-profile'
+        ? 'Set up your profile first — the dietician needs your goals and logs.'
+        : 'Could not reach the AI dietician: ' + (err && err.message ? err.message : 'unknown error');
+      aiButtonsDisabled(false);
+    });
+  }
+
+  $('ai-key-save').addEventListener('click', function () {
+    var k = $('ai-key-input').value.trim();
+    if (!k) { toast('Paste your Anthropic API key first'); return; }
+    var remember = $('ai-key-remember').checked;
+    window.AI.setKey(k, remember);
+    $('ai-key-input').value = '';
+    toast(remember ? 'AI dietician connected' : 'Connected for this session only');
+    renderCoach();
+  });
+  $('ai-key-clear').addEventListener('click', function () {
+    window.AI.setKey('');
+    $('ai-output').classList.add('hidden');
+    toast('Key removed from this browser');
+    renderCoach();
+  });
+  $('ai-checkin').addEventListener('click', function () { aiRun(window.AI.PROMPTS.checkin, 'quick'); });
+  $('ai-weekly').addEventListener('click', function () { aiRun(window.AI.PROMPTS.weekly, 'deep'); });
+  $('ai-ask').addEventListener('click', function () {
+    var q = $('ai-question').value.trim();
+    if (!q) { toast('Type a question first'); return; }
+    aiRun(q, $('ai-deep').checked ? 'deep' : 'quick');
   });
 
   /* ---------------- diet plan ---------------- */
   var dietSeed = 1;
   var lastPlan = null;
+  var loggedDays = {}; // guards against double-logging a plan day to the diary
 
   function renderDietTargets() {
     var p = S.profile();
@@ -415,6 +643,7 @@
     var p = S.profile();
     if (!p) { toast('Set up your profile first'); switchView('profile'); return; }
     lastPlan = P.generateDietPlan(p, dietSeed);
+    loggedDays = {};
     var html = '';
     var DAY_LABEL = ['Day 1 — Monday', 'Day 2 — Tuesday', 'Day 3 — Wednesday', 'Day 4 — Thursday', 'Day 5 — Friday', 'Day 6 — Saturday', 'Day 7 — Sunday'];
     lastPlan.days.forEach(function (day, di) {
@@ -443,16 +672,363 @@
   $('diet-plan-days').addEventListener('click', function (e) {
     var b = e.target.closest('button[data-log-day]');
     if (!b || !lastPlan) return;
-    var day = lastPlan.days[parseInt(b.dataset.logDay, 10)];
+    var di = parseInt(b.dataset.logDay, 10);
+    if (loggedDays[di] && !confirm('You already added this day to today’s diary. Add it again?')) return;
+    var day = lastPlan.days[di];
     Object.keys(day.meals).forEach(function (m) {
       day.meals[m].forEach(function (it) {
         S.addFood(todayStr(), m, { foodId: it.foodId, qty: it.qty, style: 'standard', extraOilTsp: 0, oilId: null });
       });
     });
+    loggedDays[di] = true;
+    b.textContent = 'Added ✓ — tap to add again';
+    if (currentDate === todayStr()) { renderDashboard(); renderLogPanel(); }
     toast('Plan logged to today’s diary');
   });
 
-  /* ---------------- workout ---------------- */
+  /* ---------------- workout tracker (manual / camera / photo-video) ---------------- */
+  var woMode = 'manual';       // manual | camera | upload
+  var woStream = null;         // active MediaStream when the camera is on
+  var woFile = null;           // selected upload file
+  var woDetected = null;       // { name, met, isStrength } for an AI-detected custom move
+
+  // MET fallback when a detected exercise isn't in our library, by
+  // category × intensity (Compendium-style values).
+  var MET_TABLE = {
+    strength: { light: 3.5, moderate: 5.0, vigorous: 6.0 },
+    bodyweight: { light: 3.8, moderate: 5.0, vigorous: 8.0 },
+    cardio: { light: 4.0, moderate: 7.0, vigorous: 10.0 },
+    yoga: { light: 2.5, moderate: 3.5, vigorous: 4.0 },
+    sport: { light: 4.5, moderate: 6.5, vigorous: 8.0 }
+  };
+  function metFor(cat, intensity) {
+    var row = MET_TABLE[cat] || MET_TABLE.strength;
+    return row[intensity] || row.moderate;
+  }
+
+  function initWorkoutSelect() {
+    var groups = {};
+    window.EXERCISES.forEach(function (x) { (groups[x.cat] = groups[x.cat] || []).push(x); });
+    // strength groups first so sets/reps logging is the front door
+    var cats = Object.keys(groups).sort(function (a, b) {
+      return (a.indexOf('Strength') >= 0 ? 0 : 1) - (b.indexOf('Strength') >= 0 ? 0 : 1);
+    });
+    $('wo-ex').innerHTML = cats.map(function (cat) {
+      return '<optgroup label="' + esc(cat) + '">' + groups[cat].map(function (x) {
+        return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('');
+    var firstStrength = window.EXERCISES.filter(function (x) { return x.strength; })[0];
+    if (firstStrength) $('wo-ex').value = firstStrength.id;
+  }
+
+  function setDetectedOption(name) {
+    var sel = $('wo-ex');
+    var opt = sel.querySelector('option[value="__detected"]');
+    if (!opt) { opt = document.createElement('option'); opt.value = '__detected'; sel.insertBefore(opt, sel.firstChild); }
+    opt.textContent = '🔎 Detected: ' + name; // textContent — inert
+  }
+
+  function selectedWorkoutEx() {
+    var v = $('wo-ex').value;
+    if (v === '__detected' && woDetected) {
+      return { id: '', name: woDetected.name, met: woDetected.met, strength: woDetected.isStrength, muscle: null };
+    }
+    return P.exById(v);
+  }
+  function isStrengthSelected() {
+    var ex = selectedWorkoutEx();
+    return ex ? !!ex.strength : false;
+  }
+
+  function updateWorkoutPreview() {
+    var p = S.profile();
+    var ex = selectedWorkoutEx();
+    if (!ex) { $('wo-kcal').textContent = ''; $('wo-kcal-detail').textContent = ''; return; }
+    var bodyKg = p ? p.weightKg : 70;
+    if (isStrengthSelected()) {
+      var r = N.strengthKcal(ex.met, bodyKg,
+        clampInt($('wo-sets').value, 1, 20, 3), clampInt($('wo-reps').value, 1, 100, 10),
+        clampNum($('wo-weight').value, 0, 500, 0));
+      $('wo-kcal').textContent = '≈ ' + r.kcal + ' kcal';
+      $('wo-kcal-detail').textContent = (ex.muscle ? ex.muscle + ' · ' : '') + '~' + r.minutes + ' min (work + rest)' +
+        (p ? '' : ' · set your profile for weight-based burn');
+    } else {
+      var minutes = clampInt($('wo-minutes').value, 1, 300, 30);
+      $('wo-kcal').textContent = '≈ ' + N.exerciseKcal(ex.met, bodyKg, minutes) + ' kcal';
+      $('wo-kcal-detail').textContent = minutes + ' min' + (p ? ' at ' + p.weightKg + ' kg' : ' · set your profile for weight-based burn');
+    }
+  }
+
+  function syncWorkoutFields() {
+    var strength = isStrengthSelected();
+    $('wo-strength').classList.toggle('hidden', !strength);
+    $('wo-cardio').classList.toggle('hidden', strength);
+    updateWorkoutPreview();
+  }
+
+  function renderWorkoutToday() {
+    $('wo-today-title').textContent = currentDate === todayStr() ? 'Today’s workout' : currentDate + ' — workout';
+    var list = S.day(currentDate).exercises || [];
+    if (!list.length) {
+      $('wo-today').innerHTML = '<p class="hint">No workout logged yet. Log one above — manually, or point your camera / upload a clip and let the AI name the exercise.</p>';
+      return;
+    }
+    var total = 0, html = '';
+    list.forEach(function (x, i) {
+      total += x.kcal || 0;
+      var strength = x.sets && x.reps;
+      var src = x.source && x.source !== 'manual'
+        ? ' · ' + (x.source === 'camera' ? '📷 camera' : '🖼️ photo/video')
+        : '';
+      html += '<div class="wo-entry"><div class="we-icon">' + (strength ? '🏋️' : '🏃') + '</div>' +
+        '<div class="we-main"><div class="we-name">' + esc(exName(x)) + '</div>' +
+        '<div class="we-detail">' + esc(exDetailText(x)) + src + '</div></div>' +
+        '<span class="we-kcal">−' + (x.kcal || 0) + ' kcal</span>' +
+        '<button class="icon-btn" data-wo-del="' + i + '" aria-label="Delete">✕</button></div>';
+    });
+    html += '<div class="wo-total"><span>Total burned today</span><span class="wt-val">' + Math.round(total) + ' kcal</span></div>';
+    $('wo-today').innerHTML = html;
+  }
+
+  function renderWorkoutView() {
+    if (!$('wo-ex').options.length) initWorkoutSelect();
+    setWorkoutMode(woMode);
+    syncWorkoutFields();
+    renderWorkoutToday();
+  }
+
+  $('wo-ex').addEventListener('change', syncWorkoutFields);
+  ['wo-sets', 'wo-reps', 'wo-weight', 'wo-minutes'].forEach(function (id) {
+    $(id).addEventListener('input', updateWorkoutPreview);
+  });
+
+  $('wo-log').addEventListener('click', function () {
+    var p = S.profile();
+    if (!p) { toast('Set up your profile first (for weight-based burn)'); switchView('profile'); return; }
+    var ex = selectedWorkoutEx();
+    if (!ex) { toast('Pick an exercise'); return; }
+    var entry;
+    if (isStrengthSelected()) {
+      var sets = clampInt($('wo-sets').value, 1, 20, 3);
+      var reps = clampInt($('wo-reps').value, 1, 100, 10);
+      var weight = clampNum($('wo-weight').value, 0, 500, 0);
+      var r = N.strengthKcal(ex.met, p.weightKg, sets, reps, weight);
+      entry = { exId: ex.id || '', name: ex.name, minutes: r.minutes, kcal: r.kcal, sets: sets, reps: reps, weightKg: weight, source: woMode };
+    } else {
+      var minutes = clampInt($('wo-minutes').value, 1, 300, 30);
+      entry = { exId: ex.id || '', name: ex.name, minutes: minutes, kcal: N.exerciseKcal(ex.met, p.weightKg, minutes), source: woMode };
+    }
+    S.addExercise(currentDate, entry);
+    toast('Logged: ' + ex.name + ' — ' + entry.kcal + ' kcal');
+    renderWorkoutToday();
+    renderDashboard();
+  });
+
+  $('wo-today').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-wo-del]');
+    if (!b) return;
+    S.removeExercise(currentDate, parseInt(b.dataset.woDel, 10));
+    renderWorkoutToday();
+    renderDashboard();
+  });
+
+  /* ---- mode switching ---- */
+  function setWorkoutMode(mode) {
+    woMode = mode;
+    document.querySelectorAll('#wo-mode button').forEach(function (x) { x.classList.toggle('active', x.dataset.mode === mode); });
+    $('wo-detect').classList.toggle('hidden', mode === 'manual');
+    $('wo-camera-panel').classList.toggle('hidden', mode !== 'camera');
+    $('wo-upload-panel').classList.toggle('hidden', mode !== 'upload');
+    if (mode !== 'camera') stopCamera();
+  }
+  $('wo-mode').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-mode]');
+    if (b) setWorkoutMode(b.dataset.mode);
+  });
+  var gotoCoach = $('wo-goto-coach');
+  if (gotoCoach) gotoCoach.addEventListener('click', function (e) { e.preventDefault(); switchView('coach'); });
+
+  /* ---- frame capture helpers ---- */
+  // Downscale any image/video source to <=640px and return a JPEG data URL,
+  // keeping the payload (and Haiku vision cost) small.
+  function frameDataURL(source, w, h) {
+    var canvas = $('wo-canvas');
+    var scale = Math.min(1, 640 / Math.max(w || 1, h || 1));
+    canvas.width = Math.max(Math.round((w || 1) * scale), 1);
+    canvas.height = Math.max(Math.round((h || 1) * scale), 1);
+    canvas.getContext('2d').drawImage(source, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.82);
+  }
+  function imageFileToFrame(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try { var f = frameDataURL(img, img.naturalWidth, img.naturalHeight); URL.revokeObjectURL(url); resolve(f); }
+        catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Could not read that image.')); };
+      img.src = url;
+    });
+  }
+  function videoFileToFrames(file, count) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+      var frames = [], times = [], idx = 0, done = false;
+      function finish(err) {
+        if (done) return; done = true;
+        URL.revokeObjectURL(url);
+        if (err) reject(err); else resolve(frames);
+      }
+      var guard = setTimeout(function () { finish(frames.length ? null : new Error('Reading the video timed out — try a shorter clip or a photo.')); }, 15000);
+      function seekNext() {
+        if (idx >= times.length) { clearTimeout(guard); finish(null); return; }
+        try { v.currentTime = times[idx]; } catch (e) { clearTimeout(guard); finish(null); }
+      }
+      v.addEventListener('loadeddata', function () {
+        var d = v.duration && isFinite(v.duration) ? v.duration : 0;
+        if (d > 0) { for (var i = 0; i < count; i++) times.push(d * (i + 1) / (count + 1)); }
+        else times.push(0);
+        seekNext();
+      });
+      v.addEventListener('seeked', function () {
+        try { frames.push(frameDataURL(v, v.videoWidth, v.videoHeight)); } catch (e) { /* skip bad frame */ }
+        idx++; seekNext();
+      });
+      v.addEventListener('error', function () { clearTimeout(guard); finish(new Error('Could not read that video.')); });
+    });
+  }
+
+  /* ---- camera ---- */
+  function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { toast('Camera not available on this device/browser'); return; }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false }).then(function (stream) {
+      woStream = stream;
+      var v = $('wo-video');
+      v.srcObject = stream;
+      var play = v.play(); if (play && play.catch) play.catch(function () {});
+      $('wo-cam-capture').disabled = false;
+      $('wo-cam-stop').disabled = false;
+      $('wo-cam-start').disabled = true;
+    }, function (err) {
+      toast('Could not access camera: ' + (err && err.name ? err.name : 'permission denied'));
+    });
+  }
+  function stopCamera() {
+    if (woStream) { woStream.getTracks().forEach(function (t) { t.stop(); }); woStream = null; }
+    var v = document.getElementById('wo-video');
+    if (v) v.srcObject = null;
+    var cap = document.getElementById('wo-cam-capture'), stp = document.getElementById('wo-cam-stop'), st = document.getElementById('wo-cam-start');
+    if (cap) cap.disabled = true;
+    if (stp) stp.disabled = true;
+    if (st) st.disabled = false;
+  }
+  $('wo-cam-start').addEventListener('click', startCamera);
+  $('wo-cam-stop').addEventListener('click', stopCamera);
+  $('wo-cam-capture').addEventListener('click', function () {
+    var v = $('wo-video');
+    if (!v.videoWidth) { toast('Camera still warming up — try again in a second'); return; }
+    runDetection([frameDataURL(v, v.videoWidth, v.videoHeight)]);
+  });
+
+  /* ---- upload ---- */
+  $('wo-file').addEventListener('change', function () {
+    woFile = this.files[0] || null;
+    $('wo-file-detect').disabled = !woFile;
+  });
+  $('wo-file-detect').addEventListener('click', function () {
+    if (!woFile) return;
+    if (/^video\//.test(woFile.type)) {
+      showDetectStatus('thinking');
+      videoFileToFrames(woFile, 3).then(function (frames) {
+        if (!frames.length) throw new Error('Could not read frames from that video.');
+        runDetection(frames);
+      }).catch(function (err) { showDetectStatus('err', err.message || 'Could not read that video.'); });
+    } else if (/^image\//.test(woFile.type)) {
+      showDetectStatus('thinking');
+      imageFileToFrame(woFile).then(function (frame) { runDetection([frame]); })
+        .catch(function (err) { showDetectStatus('err', err.message || 'Could not read that image.'); });
+    } else {
+      toast('Please choose an image or video file');
+    }
+  });
+
+  /* ---- detection flow ---- */
+  function showDetectStatus(kind, payload, match) {
+    var el = $('wo-detect-status');
+    el.classList.remove('hidden', 'thinking', 'ok', 'err');
+    if (kind === 'thinking') { el.classList.add('thinking'); el.textContent = 'Identifying the exercise (Claude Haiku vision)…'; return; }
+    if (kind === 'err') { el.classList.add('err'); el.textContent = payload; return; }
+    // kind === 'ok', payload is the detection object
+    el.classList.add('ok');
+    var conf = Math.round((payload.confidence || 0) * 100);
+    var shownName = match ? match.name : payload.exercise;
+    el.innerHTML = '<span class="det-name">' + esc(shownName) + '</span>' +
+      '<span class="det-conf">' + conf + '% sure</span>' +
+      '<div class="hint" style="margin-top:6px">' +
+      (match ? 'Matched to your exercise library. ' : 'Logged as a custom exercise. ') +
+      'Enter your sets, reps and weight below, then tap Log workout.' +
+      (payload.confidence < 0.45 ? ' Low confidence — double-check the exercise picker.' : '') +
+      '</div>';
+  }
+
+  function normalizeName(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function matchExerciseToDb(name) {
+    var n = normalizeName(name);
+    if (!n || n === 'unknown') return null;
+    var words = n.split(' ').filter(function (w) { return w.length > 2; });
+    var best = null, bestScore = 0;
+    window.EXERCISES.forEach(function (x) {
+      var hay = normalizeName(x.name + ' ' + (x.aka || []).join(' '));
+      var score = 0;
+      if (hay.indexOf(n) >= 0 || n.indexOf(normalizeName(x.name)) >= 0) score += 5;
+      words.forEach(function (w) { if (hay.indexOf(w) >= 0) score += 1; });
+      if (score > bestScore) { bestScore = score; best = x; }
+    });
+    return bestScore >= 2 ? best : null;
+  }
+
+  function applyDetection(det) {
+    var match = matchExerciseToDb(det.exercise);
+    woDetected = null;
+    if (match) {
+      var stray = $('wo-ex').querySelector('option[value="__detected"]');
+      if (stray) stray.parentNode.removeChild(stray);
+      $('wo-ex').value = match.id;
+    } else {
+      woDetected = { name: det.exercise, met: metFor(det.category, det.intensity), isStrength: det.isStrength };
+      setDetectedOption(det.exercise);
+      $('wo-ex').value = '__detected';
+    }
+    var strength = match ? match.strength : det.isStrength;
+    if (strength && det.reps) $('wo-reps').value = det.reps;
+    syncWorkoutFields();
+    showDetectStatus('ok', det, match);
+  }
+
+  function runDetection(frames) {
+    if (!window.AI.hasKey()) {
+      showDetectStatus('err', 'Connect your Anthropic API key in the Coach tab to identify exercises from a photo. You can always log manually below.');
+      return;
+    }
+    showDetectStatus('thinking');
+    window.AI.detectExercise(frames).then(function (det) {
+      if (!det || det.exercise === 'Unknown' || det.confidence < 0.2) {
+        showDetectStatus('err', 'Couldn’t confidently identify the exercise. Try a clearer angle, better light, or pick it manually below.');
+        return;
+      }
+      applyDetection(det);
+    }, function (err) {
+      showDetectStatus('err', 'Detection failed: ' + (err && err.message ? err.message : 'unknown error'));
+    });
+  }
+
+  /* ---------------- weekly workout plan ---------------- */
   $('wo-generate').addEventListener('click', function () {
     var p = S.profile();
     if (!p) { toast('Set up your profile first'); switchView('profile'); return; }
@@ -461,7 +1037,7 @@
       days: parseInt($('wo-days').value, 10),
       place: $('wo-place').value
     });
-    var goalText = { lose: 'fat loss', gain: 'muscle gain', maintain: 'general fitness' }[plan.goal];
+    var goalText = { lose: 'fat loss', gain: 'muscle gain', recomp: 'recomposition (muscle + fat loss)', maintain: 'general fitness' }[plan.goal];
     var html = '<p class="hint" style="margin-bottom:10px">Built for <strong>' + goalText +
       '</strong> · estimated burn <strong>~' + plan.weeklyKcal + ' kcal/week</strong> at your current weight. ' +
       'Warm up 5 min before and stretch 5 min after every session.</p>';
@@ -502,7 +1078,7 @@
     }
     var rows = '<tr><th>Date</th><th class="num">Weight (kg)</th><th></th></tr>';
     for (var i = w.length - 1; i >= 0; i--) {
-      rows += '<tr><td>' + esc(w[i].date) + '</td><td class="num">' + w[i].kg + '</td>' +
+      rows += '<tr><td>' + esc(w[i].date) + '</td><td class="num">' + esc(w[i].kg) + '</td>' +
         '<td><button class="icon-btn" data-wt-del="' + esc(w[i].date) + '" aria-label="Delete">✕</button></td></tr>';
     }
     $('wt-table').innerHTML = rows;
@@ -511,6 +1087,9 @@
     var date = $('wt-date').value || todayStr();
     var kg = parseFloat($('wt-kg').value);
     if (isNaN(kg) || kg < 20 || kg > 300) { toast('Enter a valid weight'); return; }
+    // A future-dated entry would sort as the newest weight and silently
+    // overwrite the profile's current weight (and every calorie calc).
+    if (date > todayStr()) { toast('Can’t log a weight for a future date'); return; }
     S.addWeight(date, Math.round(kg * 10) / 10);
     toast('Weight saved');
     renderWeight();
