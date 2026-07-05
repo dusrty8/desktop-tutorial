@@ -75,12 +75,28 @@ offline (your data lives on the phone in localStorage).
   model). The key lives only in your browser and is sent only to
   api.anthropic.com — never to us. Without a key, the free on-device coach
   above still works.
-- **Dashboard** — calorie budget vs eaten vs burned, macro donut and
-  progress bars, water glasses, exercise log.
+- **Dashboard** — an energy-balance hero: a calorie ring (remaining in the
+  centre), an **eaten − burned = net** readout against your budget, and an
+  **AI/coach suggestions** strip surfaced right up top (with a one-tap
+  ✨ AI insight). Below it: macro donut and progress bars, water glasses and
+  the day's exercise log.
 - **Weight tracking** — log daily weight, SVG trend chart with goal line,
   change stats.
-- **Exercise** — 45+ activities with MET-based burn (walking to kabaddi to
-  jhadu-pocha), logged against your body weight.
+- **Workout tracker** — log **strength** by sets × reps × weight (calories
+  burned are computed for you — working sets at the move's MET, rest at
+  near-resting) or **cardio** by minutes, both against your body weight.
+  Don't know what to pick? Point your **camera** at yourself, or **upload a
+  photo or short video**, and the app identifies the exercise for you (see
+  below), then you fill in the numbers. 65+ activities and named lifts —
+  bench, squat, deadlift, OHP, pulldown, curls, walking to kabaddi to
+  jhadu-pocha.
+- **Camera / photo / video exercise detection** — an optional AI vision
+  step: a single downscaled frame (a live-camera capture, an uploaded photo,
+  or a few frames pulled from an uploaded clip) is sent to **Claude Haiku
+  vision** using *your own* Anthropic key to name the exercise. It's a
+  best-guess helper — you can always correct the picker — and manual logging
+  works with no key at all. Frames go only to api.anthropic.com; nothing is
+  stored anywhere but your browser.
 - **7-day diet plan generator** — coach-style plans: four meals, Indian
   staples scaled to your budget (±10%), protein-first for muscle goals,
   fully diet-preference aware. Regenerate for variety; log any day's plan
@@ -106,13 +122,13 @@ the **Compendium of Physical Activities** MET values. See
 index.html            app shell (8 views)
 css/style.css         "Banana leaf & turmeric" theme (light/dark), validated chart palette
 js/data/foods.js      290+ Indian foods — the database (easy to extend)
-js/data/exercises.js  exercise MET database
-js/nutrition.js       BMR/TDEE/macros, goal modes, oil & cooking-style math
+js/data/exercises.js  exercise MET database (incl. named strength lifts)
+js/nutrition.js       BMR/TDEE/macros, goal modes, oil & cooking-style, strength burn
 js/planner.js         7-day diet plan + weekly workout plan generators
 js/store.js           localStorage persistence + import sanitization
 js/coach.js           free, on-device rule-based dietician
-js/ai.js              optional AI dietician (BYO key, Haiku/Sonnet cost routing)
-js/charts.js          dependency-free SVG charts
+js/ai.js              optional AI dietician + vision exercise detection (BYO key, Haiku/Sonnet)
+js/charts.js          dependency-free SVG charts (line, donut, calorie ring)
 js/app.js             UI wiring
 ```
 
@@ -130,6 +146,11 @@ No tier ever calls a frontier model — a dietician nudge doesn't need one, and
 this keeps a heavy user's cost to a few rupees a month. Only a small,
 structured summary of your recent logs is sent (never your name), using your
 own key, directly to `api.anthropic.com`.
+
+**Vision exercise detection** rides the same cheapest tier: `claude-haiku-4-5`
+identifies the move from one downscaled frame — a best-guess classification
+doesn't need a bigger model. It's optional and opt-in (needs your key);
+manual logging always works without it.
 
 ## Adding foods
 

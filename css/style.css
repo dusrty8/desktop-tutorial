@@ -589,6 +589,140 @@ button.btn.secondary .model-chip { background: var(--grid); color: var(--ink-2);
 }
 button.btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
 
+/* ---- dashboard energy-balance hero ---- */
+.hero-energy {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(420px 200px at 88% -10%, color-mix(in srgb, var(--saffron) 22%, transparent), transparent 70%),
+    linear-gradient(150deg, color-mix(in srgb, var(--accent) 15%, var(--surface)), var(--surface) 62%);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+.he-ring-wrap { flex: 0 0 auto; width: 172px; max-width: 42vw; }
+.he-ring { width: 100%; }
+.he-ring svg { display: block; width: 100%; height: auto; }
+.ring-track { stroke: color-mix(in srgb, var(--accent) 16%, var(--grid)); }
+.ring-fill {
+  stroke: var(--accent);
+  transition: stroke-dasharray 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.ring-fill.over { stroke: var(--warning); }
+.ring-over { stroke: var(--critical); transition: stroke-dasharray 0.7s cubic-bezier(0.22, 0.61, 0.36, 1); }
+.ring-top { fill: var(--ink); font-size: 33px; font-weight: 800; letter-spacing: -1px; font-family: inherit; }
+.ring-top.over { fill: var(--critical); }
+.ring-bottom {
+  fill: var(--muted); font-size: 11px; font-weight: 650; font-family: inherit;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.he-body { flex: 1 1 260px; min-width: 240px; }
+.he-inout { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.he-inout .io { display: flex; flex-direction: column; line-height: 1.05; }
+.he-inout .io-label {
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted); margin-bottom: 3px;
+}
+.he-inout .io-val { font-size: 1.7rem; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.he-inout .io-unit { font-size: 0.62rem; color: var(--muted); font-weight: 600; }
+.he-inout .io-in .io-val { color: var(--series-2); }
+.he-inout .io-out .io-val { color: var(--series-1); }
+.he-inout .io-net .io-val { color: var(--ink); }
+.he-inout .io-op { font-size: 1.2rem; color: var(--muted); font-weight: 700; padding-bottom: 14px; }
+.he-scale { margin-top: 16px; }
+.he-scale-track {
+  height: 12px; border-radius: 999px; overflow: hidden;
+  background: color-mix(in srgb, var(--accent) 12%, var(--grid));
+}
+.he-scale-track > span {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--saffron) 70%, var(--accent)));
+  transition: width 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.he-scale-track > span.over { background: linear-gradient(90deg, var(--warning), var(--critical)); }
+.he-scale-cap { font-size: 0.82rem; color: var(--ink-2); margin-top: 7px; }
+.he-scale-cap strong { color: var(--ink); }
+
+/* ---- dashboard suggestions strip ---- */
+.dash-coach .dc-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 12px; flex-wrap: wrap;
+}
+.dash-coach .dc-head h2 { margin: 0; }
+.ai-spark {
+  background: linear-gradient(120deg, var(--accent), color-mix(in srgb, var(--saffron) 55%, var(--accent)));
+  border: none;
+}
+.dash-coach .coach-card:last-child { margin-bottom: 0; }
+.dash-coach .ai-output { margin-top: 12px; }
+
+/* ---- segmented control ---- */
+.seg {
+  display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px;
+  background: var(--grid); margin-bottom: 14px; flex-wrap: wrap;
+}
+.seg button {
+  appearance: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 0.84rem; font-weight: 600; color: var(--ink-2);
+  padding: 8px 14px; border-radius: 9px; background: transparent;
+  min-height: 40px; transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.seg button:hover { color: var(--ink); }
+.seg button.active { background: var(--surface); color: var(--accent); box-shadow: var(--shadow-card); }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- workout detection surface ---- */
+.wo-detect {
+  border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-radius: 14px; padding: 14px; margin-bottom: 14px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.wo-detect-note { margin-bottom: 12px; }
+.wo-video-wrap {
+  border-radius: 12px; overflow: hidden; background: #000;
+  aspect-ratio: 4 / 3; max-width: 380px; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.wo-video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+.wo-detect-status {
+  margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+  border: 1px solid var(--border); background: var(--surface); font-size: 0.88rem;
+}
+.wo-detect-status.thinking { color: var(--ink-2); }
+.wo-detect-status.ok { border-left: 4px solid var(--good); }
+.wo-detect-status.err { border-left: 4px solid var(--serious); color: var(--ink-2); }
+.wo-detect-status .det-name { font-weight: 700; font-size: 1rem; color: var(--ink); }
+.wo-detect-status .det-conf {
+  display: inline-block; margin-left: 8px; font-size: 0.68rem; font-weight: 700;
+  padding: 1px 8px; border-radius: 99px; background: var(--grid); color: var(--ink-2);
+  letter-spacing: 0.03em; vertical-align: middle;
+}
+
+/* ---- workout log entries ---- */
+.wo-entry {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 0; border-bottom: 1px solid var(--grid);
+}
+.wo-entry:last-child { border-bottom: none; }
+.wo-entry .we-icon {
+  flex: 0 0 auto; width: 40px; height: 40px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.15rem;
+  background: color-mix(in srgb, var(--accent) 12%, var(--grid));
+}
+.wo-entry .we-main { flex: 1 1 auto; min-width: 0; }
+.wo-entry .we-name { font-weight: 600; font-size: 0.92rem; }
+.wo-entry .we-detail { color: var(--muted); font-size: 0.8rem; }
+.wo-entry .we-kcal { color: var(--series-1); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.wo-total {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--border);
+  font-weight: 700;
+}
+.wo-total .wt-val { font-size: 1.25rem; color: var(--series-1); font-variant-numeric: tabular-nums; }
+#wo-canvas { position: absolute; width: 0; height: 0; }
+
 /* ---- reduced motion ---- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -628,6 +762,13 @@ button.btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
   .food-list { max-height: 60vh; }
   .modal { padding: 18px; border-radius: 16px; max-height: 86vh; }
   .date-nav { flex-wrap: wrap; }
+  .hero-energy { gap: 16px; justify-content: center; }
+  .he-ring-wrap { width: 140px; }
+  .he-body { flex-basis: 100%; }
+  .he-inout .io-val { font-size: 1.45rem; }
+  .he-inout .io-op { padding-bottom: 11px; }
+  .wo-video-wrap { max-width: 100%; }
+  .seg button { padding: 8px 11px; font-size: 0.8rem; }
   .plan-day { padding: 12px 14px; }
   .plan-day h3 { flex-direction: column; gap: 2px; }
   .workout-item { flex-direction: column; gap: 0; }

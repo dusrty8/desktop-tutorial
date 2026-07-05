@@ -3,12 +3,22 @@
  *
  * `met` is the metabolic equivalent from the Compendium of Physical
  * Activities. Calories burned = MET × 3.5 × weight(kg) / 200 × minutes.
+ *
+ * opts.strength === true marks a resistance move logged by sets × reps ×
+ * weight (the workout tracker derives its duration and burn from those via
+ * Nutrition.strengthKcal). opts.muscle is the primary muscle group and
+ * opts.aka are alternate names that help the camera/photo AI detector map a
+ * recognised exercise onto this row.
  */
 (function () {
   'use strict';
   var EXERCISES = [];
-  function E(id, name, cat, met) {
-    EXERCISES.push({ id: id, name: name, cat: cat, met: met });
+  function E(id, name, cat, met, opts) {
+    opts = opts || {};
+    EXERCISES.push({
+      id: id, name: name, cat: cat, met: met,
+      strength: !!opts.strength, muscle: opts.muscle || null, aka: opts.aka || []
+    });
   }
 
   var WK = 'Walking & Running';
@@ -35,6 +45,35 @@
   E('elliptical', 'Elliptical trainer', GY, 5.0);
   E('rowing', 'Rowing machine — moderate', GY, 7.0);
   E('treadmill-incline', 'Treadmill incline walk', GY, 6.0);
+
+  /* Strength — logged by sets × reps × weight (see Nutrition.strengthKcal).
+     MET follows the Compendium: compound barbell work ~6.0, machine/isolation
+     ~3.5–5.0. aka names widen AI-detector matching. */
+  var ST = 'Strength (sets & reps)';
+  E('bench-press', 'Barbell bench press', ST, 6.0, { strength: true, muscle: 'Chest', aka: ['bench press', 'chest press', 'flat bench'] });
+  E('incline-press', 'Incline dumbbell press', ST, 5.5, { strength: true, muscle: 'Chest', aka: ['incline press', 'incline bench'] });
+  E('pushup', 'Push-ups', ST, 5.0, { strength: true, muscle: 'Chest', aka: ['pushup', 'push up', 'press up'] });
+  E('dips', 'Dips (chest/triceps)', ST, 5.0, { strength: true, muscle: 'Chest & triceps', aka: ['parallel bar dip', 'tricep dip'] });
+  E('squat', 'Barbell back squat', ST, 6.0, { strength: true, muscle: 'Legs', aka: ['squat', 'back squat', 'barbell squat'] });
+  E('goblet-squat', 'Goblet squat', ST, 5.0, { strength: true, muscle: 'Legs', aka: ['dumbbell squat', 'kettlebell squat'] });
+  E('leg-press', 'Leg press', ST, 5.0, { strength: true, muscle: 'Legs', aka: ['machine leg press'] });
+  E('lunges', 'Walking lunges', ST, 5.0, { strength: true, muscle: 'Legs', aka: ['lunge', 'split squat'] });
+  E('leg-extension', 'Leg extension', ST, 3.5, { strength: true, muscle: 'Quads', aka: ['quad extension'] });
+  E('leg-curl', 'Leg curl', ST, 3.5, { strength: true, muscle: 'Hamstrings', aka: ['hamstring curl'] });
+  E('calf-raise', 'Calf raise', ST, 3.5, { strength: true, muscle: 'Calves', aka: ['standing calf raise'] });
+  E('deadlift', 'Deadlift', ST, 6.0, { strength: true, muscle: 'Back & legs', aka: ['conventional deadlift'] });
+  E('romanian-deadlift', 'Romanian deadlift', ST, 6.0, { strength: true, muscle: 'Hamstrings', aka: ['rdl', 'stiff leg deadlift'] });
+  E('hip-thrust', 'Hip thrust', ST, 5.0, { strength: true, muscle: 'Glutes', aka: ['glute bridge', 'barbell hip thrust'] });
+  E('overhead-press', 'Overhead shoulder press', ST, 6.0, { strength: true, muscle: 'Shoulders', aka: ['ohp', 'military press', 'shoulder press'] });
+  E('lateral-raise', 'Dumbbell lateral raise', ST, 3.5, { strength: true, muscle: 'Shoulders', aka: ['side raise', 'lateral raise'] });
+  E('lat-pulldown', 'Lat pulldown', ST, 5.0, { strength: true, muscle: 'Back', aka: ['pulldown', 'lat pull down'] });
+  E('pullup', 'Pull-ups / chin-ups', ST, 5.0, { strength: true, muscle: 'Back', aka: ['pullup', 'chin up', 'chinup'] });
+  E('barbell-row', 'Barbell row', ST, 6.0, { strength: true, muscle: 'Back', aka: ['bent over row', 'bent-over row'] });
+  E('dumbbell-row', 'Dumbbell row', ST, 5.0, { strength: true, muscle: 'Back', aka: ['db row', 'one arm row'] });
+  E('bicep-curl', 'Bicep curl', ST, 3.5, { strength: true, muscle: 'Arms', aka: ['dumbbell curl', 'barbell curl', 'curl'] });
+  E('tricep-pushdown', 'Tricep pushdown', ST, 3.5, { strength: true, muscle: 'Arms', aka: ['cable pushdown', 'tricep extension'] });
+  E('plank', 'Plank (per set as reps=1)', ST, 3.3, { strength: true, muscle: 'Core', aka: ['front plank', 'elbow plank'] });
+  E('situp', 'Sit-ups / crunches', ST, 3.8, { strength: true, muscle: 'Core', aka: ['crunch', 'sit up', 'abs'] });
 
   var HM = 'Home & Bodyweight';
   E('bodyweight', 'Bodyweight workout (squats, push-ups, lunges)', HM, 3.8);

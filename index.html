@@ -5,7 +5,7 @@
   <!-- Content-Security-Policy: all scripts are local files (no inline JS), so
        script-src 'self' blocks any injected inline/on* handler; connect-src
        allows only the optional AI-dietician call to Anthropic. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.anthropic.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.anthropic.com; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self' 'unsafe-inline'; base-uri 'none'; object-src 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
   <meta name="theme-color" content="#1e5f40" media="(prefers-color-scheme: light)">
@@ -49,7 +49,47 @@
         <button class="btn small" id="dash-today">Today</button>
       </div>
 
-      <div class="stat-row" id="dash-stats"></div>
+      <!-- Energy-balance hero: calories in vs out at a glance -->
+      <div class="card hero-energy">
+        <div class="he-ring-wrap">
+          <div class="he-ring" id="dash-ring"></div>
+        </div>
+        <div class="he-body">
+          <div class="he-inout">
+            <div class="io io-in">
+              <span class="io-label">Eaten in</span>
+              <span class="io-val" id="he-eaten">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+            <span class="io-op">−</span>
+            <div class="io io-out">
+              <span class="io-label">Burned</span>
+              <span class="io-val" id="he-burned">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+            <span class="io-op">=</span>
+            <div class="io io-net">
+              <span class="io-label">Net</span>
+              <span class="io-val" id="he-net">0</span>
+              <span class="io-unit">kcal</span>
+            </div>
+          </div>
+          <div class="he-scale">
+            <div class="he-scale-track"><span id="he-scale-fill"></span></div>
+            <p class="he-scale-cap" id="he-scale-cap"></p>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI / coach suggestions surfaced right on the dashboard -->
+      <div class="card dash-coach">
+        <div class="dc-head">
+          <h2>💡 Suggestions for you</h2>
+          <button class="btn small ai-spark" id="dash-ai-insight">✨ AI insight</button>
+        </div>
+        <div id="dash-coach-cards"></div>
+        <div id="dash-ai-out" class="ai-output hidden"></div>
+      </div>
 
       <div class="grid-2" style="margin-top:16px">
         <div class="card">
@@ -191,6 +231,79 @@
 
     <!-- ================= Workout ================= -->
     <section class="view" id="view-workout">
+      <p class="view-kicker" aria-hidden="true">Aaj ka pasina — log your training</p>
+
+      <!-- Workout tracker: manual, live camera, or photo/video upload -->
+      <div class="card">
+        <h2>Log a workout</h2>
+        <div class="seg" id="wo-mode" role="tablist">
+          <button type="button" data-mode="manual" class="active">✍️ Manual</button>
+          <button type="button" data-mode="camera">📷 Camera</button>
+          <button type="button" data-mode="upload">🖼️ Photo / Video</button>
+        </div>
+
+        <!-- detection surface (camera + upload share it) -->
+        <div id="wo-detect" class="wo-detect hidden">
+          <p class="hint wo-detect-note">
+            📸 A frame is sent to <strong>Anthropic (Claude Haiku vision)</strong>
+            using your own API key to identify the exercise — then you enter the
+            sets, reps and weight. Nothing is stored anywhere but this browser.
+            Connect a key in the <a href="#" id="wo-goto-coach">Coach tab</a>.
+          </p>
+          <div id="wo-camera-panel" class="hidden">
+            <div class="wo-video-wrap">
+              <video id="wo-video" playsinline muted></video>
+            </div>
+            <div class="form-actions">
+              <button class="btn small" id="wo-cam-start">Start camera</button>
+              <button class="btn small" id="wo-cam-capture" disabled>📸 Capture &amp; identify</button>
+              <button class="btn secondary small" id="wo-cam-stop" disabled>Stop</button>
+            </div>
+          </div>
+          <div id="wo-upload-panel" class="hidden">
+            <label class="field"><span>Upload a photo or a short video of the exercise</span>
+              <input type="file" id="wo-file" accept="image/*,video/*">
+            </label>
+            <button class="btn small" id="wo-file-detect" disabled>🔎 Identify exercise</button>
+          </div>
+          <div id="wo-detect-status" class="wo-detect-status hidden"></div>
+        </div>
+
+        <div class="form-grid" style="margin-top:6px">
+          <label class="field"><span>Exercise</span>
+            <select id="wo-ex"></select>
+          </label>
+        </div>
+        <!-- strength inputs -->
+        <div id="wo-strength" class="form-grid">
+          <label class="field"><span>Sets</span>
+            <input type="number" id="wo-sets" min="1" max="20" step="1" value="3">
+          </label>
+          <label class="field"><span>Reps / set</span>
+            <input type="number" id="wo-reps" min="1" max="100" step="1" value="10">
+          </label>
+          <label class="field"><span>Weight (kg, 0 = bodyweight)</span>
+            <input type="number" id="wo-weight" min="0" max="500" step="0.5" value="20">
+          </label>
+        </div>
+        <!-- cardio inputs -->
+        <div id="wo-cardio" class="form-grid hidden">
+          <label class="field"><span>Minutes</span>
+            <input type="number" id="wo-minutes" min="1" max="300" step="1" value="30">
+          </label>
+        </div>
+        <div class="live-kcal" id="wo-kcal"></div>
+        <div class="live-macros" id="wo-kcal-detail"></div>
+        <button class="btn" id="wo-log">Log workout</button>
+      </div>
+
+      <!-- today's logged training -->
+      <div class="card">
+        <h2 id="wo-today-title">Today's workout</h2>
+        <div id="wo-today"></div>
+      </div>
+
+      <!-- weekly plan generator (unchanged) -->
       <div class="card">
         <h2>Weekly workout plan</h2>
         <div class="form-grid">
@@ -219,6 +332,7 @@
         <button class="btn" id="wo-generate">Generate workout plan</button>
         <div id="wo-plan" style="margin-top:16px"></div>
       </div>
+      <canvas id="wo-canvas" class="hidden" aria-hidden="true"></canvas>
     </section>
 
     <!-- ================= Weight ================= -->

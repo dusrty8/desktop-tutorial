@@ -115,7 +115,14 @@
   }
   function sanitizeExercise(x) {
     if (!x || typeof x !== 'object') return null;
-    return { exId: str(x.exId), minutes: num(x.minutes, 0, 0, 100000), kcal: num(x.kcal, 0, 0, 100000) };
+    var out = { exId: str(x.exId), minutes: num(x.minutes, 0, 0, 100000), kcal: num(x.kcal, 0, 0, 100000) };
+    // optional strength / detection metadata (newer entries)
+    if (x.name != null) out.name = str(x.name).slice(0, 80);
+    if (x.sets != null) out.sets = num(x.sets, 0, 0, 100);
+    if (x.reps != null) out.reps = num(x.reps, 0, 0, 1000);
+    if (x.weightKg != null) out.weightKg = num(x.weightKg, 0, 0, 1000);
+    if (x.source != null) out.source = str(x.source).slice(0, 20);
+    return out;
   }
   function sanitizeDay(d) {
     var out = blankDay();

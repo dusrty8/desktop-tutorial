@@ -190,6 +190,28 @@
     return round(met * 3.5 * weightKg / 200 * minutes);
   }
 
+  /* Strength burn from sets × reps × weight.
+     Duration is derived, not entered: ~3.5 s of work per rep, plus rest
+     between sets. Working sets burn at the move's MET; the rest between them
+     burns at a near-resting ~1.6 MET (standing/recovering), so a low-rep
+     heavy day and a high-rep pump day don't get the same inflated number.
+     External load raises effort slightly — a small bump scaled to weight
+     relative to a light dumbbell — capped so it can't run away. Returns
+     { kcal, minutes }. */
+  function strengthKcal(met, weightKg, sets, reps, loadKg, restSec) {
+    sets = Math.max(1, Math.round(sets || 1));
+    reps = Math.max(1, Math.round(reps || 1));
+    restSec = restSec == null ? 75 : restSec;
+    var SEC_PER_REP = 3.5;
+    var activeMin = sets * reps * SEC_PER_REP / 60;
+    var restMin = Math.max(sets - 1, 0) * restSec / 60;
+    // load factor: +0..25% as external load climbs (0 → bodyweight, ~40 kg+ → full)
+    var loadFactor = 1 + Math.min(Math.max(loadKg || 0, 0) / 40, 1) * 0.25;
+    var work = met * 3.5 * weightKg / 200 * activeMin * loadFactor;
+    var rest = 1.6 * 3.5 * weightKg / 200 * restMin;
+    return { kcal: round(work + rest), minutes: Math.round(activeMin + restMin) };
+  }
+
   /* Diet-preference filter. 'jain' additionally excludes onion/garlic and
      root vegetables via tags. */
   function dietAllows(pref, food) {
@@ -219,6 +241,7 @@
     bmiClass: bmiClass,
     computeEntry: computeEntry,
     exerciseKcal: exerciseKcal,
+    strengthKcal: strengthKcal,
     dietAllows: dietAllows
   };
 })();
