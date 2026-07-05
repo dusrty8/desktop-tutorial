@@ -600,9 +600,10 @@
   $('ai-key-save').addEventListener('click', function () {
     var k = $('ai-key-input').value.trim();
     if (!k) { toast('Paste your Anthropic API key first'); return; }
-    window.AI.setKey(k);
+    var remember = $('ai-key-remember').checked;
+    window.AI.setKey(k, remember);
     $('ai-key-input').value = '';
-    toast('AI dietician connected');
+    toast(remember ? 'AI dietician connected' : 'Connected for this session only');
     renderCoach();
   });
   $('ai-key-clear').addEventListener('click', function () {

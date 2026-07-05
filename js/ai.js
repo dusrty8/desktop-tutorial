@@ -34,13 +34,27 @@
     'Be warm but direct; no lectures. Keep answers under 200 words unless doing a weekly review (then up to 400, structured with short headings). ' +
     'Never give medical advice; suggest a doctor for medical issues. Reply in plain text, no markdown tables.';
 
+  /* Key storage. The key is the user's OWN Anthropic key — never a shared one
+     — and lives only in this browser. Two persistence modes:
+       remember = true  → localStorage (survives restarts; the convenient default)
+       remember = false → sessionStorage (dropped when the tab/browser closes;
+                          safer on a shared/public machine).
+     getKey() reads session first, then local; clearing wipes both. */
   function getKey() {
+    try {
+      var s = sessionStorage.getItem(KEY_STORAGE);
+      if (s) return s;
+    } catch (e) { /* sessionStorage blocked */ }
     try { return localStorage.getItem(KEY_STORAGE) || ''; } catch (e) { return ''; }
   }
-  function setKey(k) {
+  function setKey(k, remember) {
+    // clear from both stores first so we never leave a stale copy behind
+    try { localStorage.removeItem(KEY_STORAGE); } catch (e) { /* blocked */ }
+    try { sessionStorage.removeItem(KEY_STORAGE); } catch (e) { /* blocked */ }
+    if (!k) return;
     try {
-      if (k) localStorage.setItem(KEY_STORAGE, k);
-      else localStorage.removeItem(KEY_STORAGE);
+      if (remember === false) sessionStorage.setItem(KEY_STORAGE, k);
+      else localStorage.setItem(KEY_STORAGE, k);
     } catch (e) { /* storage blocked */ }
   }
 

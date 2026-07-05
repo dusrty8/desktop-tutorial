@@ -169,26 +169,39 @@
         <h2>🤖 AI Dietician <span class="hint" style="font-weight:400">(optional — uses your own Anthropic API key)</span></h2>
         <div id="ai-locked">
           <p class="hint" style="margin-bottom:10px">
-            Connect your own Anthropic API key to get a conversational
-            dietician that reads your actual logs. Cost-routed so it stays
-            cheap: daily check-ins run on <strong>Claude Haiku</strong>
+            The AI dietician runs on <strong>your own</strong> Anthropic API
+            key — there's no shared account. Connect a key to get a
+            conversational dietician that reads your actual logs. Cost-routed
+            so it stays cheap: daily check-ins run on <strong>Claude Haiku</strong>
             (fractions of a paisa each) and weekly reviews on
-            <strong>Claude Sonnet</strong>. The key is stored only in this
-            browser and sent only to api.anthropic.com — never to us.
+            <strong>Claude Sonnet</strong>. Your key is stored only in this
+            browser and sent only to api.anthropic.com — never to us, and
+            never to anyone else who opens this app (they connect their own).
           </p>
           <p class="hint" style="margin-bottom:10px">
             ⚠️ Note: on a shared hosting origin (e.g. a personal
             <code>github.io</code> account), other pages you host under the
             same account could read this browser's stored key. Prefer a
-            dedicated key with a low spend limit, and disconnect it below when
-            you're done.
+            dedicated key with a low spend limit, untick “Remember” on a shared
+            computer, and disconnect it below when you're done.
           </p>
           <div class="form-grid">
             <label class="field" style="grid-column:1/-1"><span>Anthropic API key</span>
               <input type="password" id="ai-key-input" placeholder="sk-ant-…" autocomplete="off">
             </label>
           </div>
-          <button class="btn" id="ai-key-save">Connect</button>
+          <div class="form-actions">
+            <button class="btn" id="ai-key-save">Connect</button>
+            <label style="font-size:0.82rem; color:var(--ink-2); display:flex; align-items:center; gap:6px">
+              <input type="checkbox" id="ai-key-remember" style="width:auto" checked>
+              Remember my key on this device
+            </label>
+          </div>
+          <p class="hint" style="margin-top:8px">
+            Ticked: kept on this device until you disconnect. Unticked:
+            session-only — cleared when you close the tab (best on a shared or
+            public computer).
+          </p>
         </div>
         <div id="ai-unlocked" class="hidden">
           <div class="form-actions" style="margin-bottom:12px">
@@ -246,9 +259,11 @@
         <div id="wo-detect" class="wo-detect hidden">
           <p class="hint wo-detect-note">
             📸 A frame is sent to <strong>Anthropic (Claude Haiku vision)</strong>
-            using your own API key to identify the exercise — then you enter the
-            sets, reps and weight. Nothing is stored anywhere but this browser.
-            Connect a key in the <a href="#" id="wo-goto-coach">Coach tab</a>.
+            using <strong>your own</strong> API key to identify the exercise —
+            then you enter the sets, reps and weight. There's no shared key:
+            anyone using this app connects their own, and nothing is stored
+            anywhere but this browser. Connect a key in the
+            <a href="#" id="wo-goto-coach">Coach tab</a>.
           </p>
           <div id="wo-camera-panel" class="hidden">
             <div class="wo-video-wrap">

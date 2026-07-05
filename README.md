@@ -152,6 +152,29 @@ identifies the move from one downscaled frame — a best-guess classification
 doesn't need a bigger model. It's optional and opt-in (needs your key);
 manual logging always works without it.
 
+## Using the AI features — your key stays yours
+
+The AI dietician and the camera/photo exercise detection run on **your own**
+Anthropic API key, entered by you. There is **no shared key** and no server:
+
+- The key is stored only in your browser and is sent only to
+  `api.anthropic.com` — never to us, and **never to anyone else who opens the
+  public app** (each person connects their own key; a visitor with no key just
+  can't use the AI features).
+- The key is **not** part of the data backup (Export), never logged, and never
+  written into the page.
+- On connect you can untick **"Remember my key on this device"** to keep it
+  **session-only** (cleared when you close the tab) — recommended on a shared or
+  public computer. Otherwise it persists until you tap **Disconnect key**.
+
+Two same-browser cautions (not reachable by other visitors): on a shared
+`*.github.io` account all your pages share one origin and could read the stored
+key, and browser extensions can read it too. So:
+
+- Use a **dedicated Anthropic key with a low spend limit** for this app.
+- To remove the shared-origin risk entirely, host on a **dedicated origin** — a
+  custom domain, or a GitHub account that hosts only this app.
+
 ## Adding foods
 
 Append one line in `js/data/foods.js`:
